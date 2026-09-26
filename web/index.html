@@ -1,0 +1,344 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DHRUVA</title>
+<link rel="icon" href="data:,">
+<style>
+:root{--bg:#0b1220;--panel:#111a2e;--panel2:#16213a;--line:#25335a;--text:#e8edf7;--mut:#93a1bd;
+--gnss:#2dd4bf;--dr:#fbbf24;--rec:#a78bfa;--bad:#f87171;--sim:#f59e0b;--base:#fb923c;--ok:#4ade80}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:15px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+header{display:flex;flex-wrap:wrap;align-items:center;gap:8px 20px;padding:12px 16px;border-bottom:1px solid var(--line)}
+h1{margin:0;font-size:24px;letter-spacing:.18em}
+.tag{color:var(--mut);font-size:13px}
+nav{display:flex;gap:6px;margin-left:auto;flex-wrap:wrap}
+nav button{background:var(--panel);color:var(--text);border:1px solid var(--line);padding:8px 14px;border-radius:8px;cursor:pointer;font:inherit}
+nav button[aria-selected=true]{background:#1e3a8a;border-color:#3b82f6}
+.sim{background:#3b2a05;color:#fde68a;border-bottom:2px solid var(--sim);padding:8px 16px;font-size:13px;font-weight:600}
+main{padding:16px;max-width:1280px;margin:0 auto}
+section[hidden]{display:none}
+.grid{display:grid;gap:12px}
+.tiles{grid-template-columns:repeat(auto-fit,minmax(190px,1fr));margin-bottom:12px}
+.tile,.panel{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px 14px}
+.tile .k{font-size:12px;color:var(--mut);letter-spacing:.1em;text-transform:uppercase}
+.tile .v{font-size:26px;font-weight:700;margin-top:2px}
+.tile .s{font-size:12px;color:var(--mut)}
+.bar{height:8px;border-radius:4px;background:#0b1220;border:1px solid var(--line);margin-top:6px;overflow:hidden}
+.bar i{display:block;height:100%;background:var(--gnss);width:0}
+.state{padding:14px 16px;border-radius:10px;border:2px solid var(--gnss);background:var(--panel);margin-bottom:12px}
+.state .big{font-size:28px;font-weight:800}
+.state .sub{color:var(--mut)}
+.stepper{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:12px}
+.stepper div{padding:8px;border:1px solid var(--line);border-radius:8px;font-size:12px;color:var(--mut);text-align:center}
+.stepper div.on{color:var(--text);border-color:#60a5fa;background:#1e3a8a}
+.two{grid-template-columns:2fr 1fr}
+@media(max-width:860px){.two{grid-template-columns:1fr}.stepper{grid-template-columns:1fr 1fr}}
+canvas{width:100%;display:block;background:#0a1020;border:1px solid var(--line);border-radius:10px}
+#map1,#map2{height:min(58vh,520px)}
+#chart{height:230px}
+.btn{background:#b91c1c;color:#fff;border:2px solid #fca5a5;border-radius:10px;padding:14px 18px;font:700 17px/1 ui-monospace,Consolas,monospace;cursor:pointer;width:100%}
+.btn:hover{background:#dc2626}
+.btn2{background:var(--panel2);color:var(--text);border:1px solid var(--line);border-radius:8px;padding:8px 12px;font:inherit;cursor:pointer}
+.btn2[aria-pressed=true]{background:#1e3a8a;border-color:#3b82f6}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:8px 0}
+input[type=range]{flex:1;min-width:160px}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th,td{padding:7px 8px;border-bottom:1px solid var(--line);text-align:left}
+th{color:var(--mut);font-weight:600;font-size:12px;letter-spacing:.06em;text-transform:uppercase}
+td.n{font-variant-numeric:tabular-nums}
+.nm{color:#fca5a5}
+.lg span{display:inline-block;margin-right:14px;font-size:12px;color:var(--mut)}
+.lg b{display:inline-block;width:12px;height:3px;vertical-align:middle;margin-right:5px}
+h2{margin:0 0 8px;font-size:17px}
+ul{margin:6px 0 0;padding-left:20px}
+small{color:var(--mut)}
+</style>
+</head>
+<body>
+<header>
+  <h1>DHRUVA</h1>
+  <div class="tag">Navigation that does not stop where the sky does</div>
+  <nav role="tablist">
+    <button role="tab" data-tab="hud" aria-selected="true">Navigation HUD</button>
+    <button role="tab" data-tab="replay" aria-selected="false">Replay / GNSS Outage</button>
+    <button role="tab" data-tab="metrics" aria-selected="false">Technical Metrics</button>
+  </nav>
+</header>
+<div class="sim">DATA: SIMULATED REPLAY. A synthetic drive replayed through the real DHRUVA engine. These are not field measurements. DHRUVA does not replace GNSS: it keeps a position estimate going when GNSS is unavailable, degraded or untrustworthy.</div>
+<main>
+<div id="err" class="panel nm" hidden>web/data/demo.js is missing. Run: .venv\Scripts\python scripts\make_demo.py</div>
+
+<section id="tab-hud">
+  <div class="state" id="state"><div class="big" id="stName">-</div><div class="sub" id="stSub">-</div></div>
+  <div class="grid tiles">
+    <div class="tile"><div class="k">Mode</div><div class="v" id="tMode">-</div><div class="s" id="tModeS">-</div></div>
+    <div class="tile"><div class="k">GNSS trust</div><div class="v" id="tTrust">-</div><div class="bar"><i id="tTrustBar"></i></div><div class="s">engine integrity-monitor score, 0 to 1</div></div>
+    <div class="tile"><div class="k">Speed</div><div class="v" id="tSpeed">-</div><div class="s" id="tHead">-</div></div>
+    <div class="tile"><div class="k">Position confidence</div><div class="v" id="tConf">-</div><div class="s" id="tConfS">-</div></div>
+    <div class="tile"><div class="k">Data</div><div class="v" style="color:var(--sim)">SIMULATED</div><div class="s">synthetic drive, not a field measurement</div></div>
+  </div>
+  <div class="stepper" id="stepper">
+    <div>1. GNSS MODE<br>TRUST HIGH</div><div>2. DEAD RECKONING<br>TRUST LOW / SIMULATED</div>
+    <div>3. GNSS RECOVERY<br>VALIDATING GNSS</div><div>4. GNSS MODE<br>position recovered</div>
+  </div>
+  <div class="grid two">
+    <div><canvas id="map1"></canvas><div class="lg" id="lg1"></div></div>
+    <div class="panel">
+      <button class="btn" id="btnOutage">[ SIMULATE GNSS OUTAGE ]</button>
+      <div class="row"><button class="btn2" id="btnSpoof">Simulated spoof scenario</button></div>
+      <small id="hint">Replays the simulated 60 s GNSS outage through the engine. The spoof scenario is one simulated attack type (a 500 m step); it does not claim to detect all spoofing.</small>
+      <div class="row"><small id="clock1">-</small></div>
+    </div>
+  </div>
+</section>
+
+<section id="tab-replay" hidden>
+  <div class="row">
+    <span class="tag">Scenario:</span>
+    <button class="btn2" data-sid="outage">GNSS outage 60 s</button>
+    <button class="btn2" data-sid="spoof_step">Spoof: 500 m step</button>
+    <button class="btn2" data-sid="spoof_ramp">Spoof: 2 m/s drift</button>
+  </div>
+  <div class="row">
+    <button class="btn2" id="btnPlay">Play</button><button class="btn2" id="btnRestart">Restart</button>
+    <button class="btn2" data-spd="1">1x</button><button class="btn2" data-spd="4">4x</button><button class="btn2" data-spd="10">10x</button>
+    <label><input type="checkbox" id="chkBase" checked> show baseline (no ML, no constraints, no monitor)</label>
+    <input type="range" id="scrub" min="0" max="1000" value="0" aria-label="time">
+    <small id="clock2">-</small>
+  </div>
+  <canvas id="map2"></canvas>
+  <div class="lg" id="lg2"></div>
+  <h2 style="margin-top:14px">Position error against simulated ground truth</h2>
+  <canvas id="chart"></canvas>
+  <div class="lg"><span><b style="background:var(--gnss)"></b>DHRUVA error</span><span><b style="background:var(--base)"></b>baseline error</span><span><b style="background:#93a1bd"></b>DHRUVA 95 % radius (own estimate)</span><span id="errNow"></span></div>
+</section>
+
+<section id="tab-metrics" hidden>
+  <div class="panel"><h2 id="mTitle">-</h2>
+    <small>Numbers computed by the engine code on ONE simulated drive (n = 1). They show engine behaviour in a simulator with an assumed sensor model. They are not evidence of real-world accuracy.</small>
+    <table id="mTable"></table>
+  </div>
+  <div class="grid two" style="margin-top:12px">
+    <div class="panel"><h2>NOT MEASURED</h2><table id="nmTable"></table></div>
+    <div class="panel"><h2>Status</h2>
+      <b>IMPLEMENTED</b> (Python): error-state EKF, mount alignment, non-holonomic constraints, SpeedNet (TFLite), GNSS integrity monitor, HMM map matcher and A* router (unit-tested, not wired in), fault injectors, evaluation harness.
+      <br><b>SIMULATED</b>: every trajectory and sensor stream shown here.
+      <br><b>PLANNED</b>: Android app, Kotlin engine, real datasets, on-device measurement.
+      <div id="prov" style="margin-top:8px"></div>
+    </div>
+  </div>
+</section>
+</main>
+
+<script src="data/demo.js"></script>
+<script>
+"use strict";
+const $ = s => document.querySelector(s), $$ = s => Array.from(document.querySelectorAll(s));
+const NM = "— NOT MEASURED";
+const D = window.DHRUVA_DEMO;
+const COL = {GNSS: "#2dd4bf", DR: "#fbbf24", DEGRADED: "#fb7185", REACQUIRE: "#a78bfa", SPOOF_REJECTED: "#f87171"};
+const NAME = {GNSS: "GNSS MODE", DR: "DEAD RECKONING", DEGRADED: "DEGRADED", REACQUIRE: "GNSS RECOVERY",
+  SPOOF_REJECTED: "GNSS REJECTED: DEAD RECKONING"};
+const st = {sid: "outage", tp: 0, playing: false, speed: 4, tab: "hud", base: true};
+let S = null;
+
+function fmt(x, nd) { return x == null ? NM : x.toFixed(nd === undefined ? 1 : nd); }
+function bisect(a, x) { let lo = 0, hi = a.length - 1; while (lo < hi) { const m = (lo + hi + 1) >> 1; if (a[m] <= x) lo = m; else hi = m - 1; } return lo; }
+
+function prep(s) {
+  const n = s.t.length, err = [], berr = [];
+  for (let i = 0; i < n; i++) {
+    err.push(Math.hypot(s.e[i] - s.truth_e[i], s.n[i] - s.truth_n[i]));
+    berr.push(Math.hypot(s.base_e[i] - s.truth_e[i], s.base_n[i] - s.truth_n[i]));
+  }
+  const xs = [].concat(s.e, s.truth_e, s.base_e, s.gnss.e), ys = [].concat(s.n, s.truth_n, s.base_n, s.gnss.n);
+  const mn = a => a.reduce((p, c) => (c != null && c < p ? c : p), Infinity), mx = a => a.reduce((p, c) => (c != null && c > p ? c : p), -Infinity);
+  let e0 = mn(xs), e1 = mx(xs), n0 = mn(ys), n1 = mx(ys);
+  const pe = Math.max(20, (e1 - e0) * .06), pn = Math.max(20, (n1 - n0) * .06);
+  s.err = err; s.berr = berr; s.bounds = {e0: e0 - pe, e1: e1 + pe, n0: n0 - pn, n1: n1 + pn};
+  // display state: the engine stays in DR while its trust score climbs back from 0 as fresh fixes are validated
+  s.dm = s.mode.map((m, k) => (s.modes[m] === "DR" && s.trust[k] != null && s.trust[k] > 0.01 ? "REACQUIRE" : s.modes[m]));
+  s.firstDR = s.dm.findIndex(m => m === "DR" || m === "SPOOF_REJECTED");
+  s.emax = Math.max(10, mx(s.err), mx(s.berr)) * 1.08;
+}
+
+function setScenario(sid, keepTime) {
+  st.sid = sid; S = D.scenarios.find(x => x.id === sid);
+  if (!S.err) prep(S);
+  if (!keepTime) { st.tp = Math.max(0, S.t0 - 12); st.playing = false; }
+  $$("[data-sid]").forEach(b => b.setAttribute("aria-pressed", b.dataset.sid === sid));
+  buildMetrics(); render();
+}
+
+function idxNow() { return bisect(S.t, st.tp); }
+
+function trustLabel(t) { return t >= .8 ? "HIGH" : t >= .4 ? "MEDIUM" : "LOW"; }
+function confLabel(c) { return c == null ? NM : c <= 15 ? "GOOD" : c <= 50 ? "WARNING" : "CRITICAL"; }
+
+function drawMap(cv, i) {
+  const dpr = window.devicePixelRatio || 1, w = cv.clientWidth, h = cv.clientHeight;
+  if (!w || !h) return;
+  if (cv.width !== Math.round(w * dpr) || cv.height !== Math.round(h * dpr)) { cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr); }
+  const g = cv.getContext("2d"); g.setTransform(dpr, 0, 0, dpr, 0, 0); g.clearRect(0, 0, w, h);
+  const b = S.bounds, pad = 24, sc = Math.min((w - 2 * pad) / (b.e1 - b.e0), (h - 2 * pad) / (b.n1 - b.n0));
+  const cx = (b.e0 + b.e1) / 2, cy = (b.n0 + b.n1) / 2, X = e => w / 2 + (e - cx) * sc, Y = n => h / 2 - (n - cy) * sc;
+  let step = [10, 20, 50, 100, 200, 500, 1000, 2000].find(v => v * sc >= 70) || 2000;
+  g.strokeStyle = "#16213a"; g.lineWidth = 1; g.fillStyle = "#5b6b8c"; g.font = "11px system-ui";
+  for (let e = Math.ceil((cx - w / 2 / sc) / step) * step; e < cx + w / 2 / sc; e += step) { g.beginPath(); g.moveTo(X(e), 0); g.lineTo(X(e), h); g.stroke(); }
+  for (let n = Math.ceil((cy - h / 2 / sc) / step) * step; n < cy + h / 2 / sc; n += step) { g.beginPath(); g.moveTo(0, Y(n)); g.lineTo(w, Y(n)); g.stroke(); }
+  g.fillText("No basemap: local trajectory view (ENU metres from first fix)", 8, 14);
+  g.fillText("N ↑", w - 30, 14);
+  g.strokeStyle = "#93a1bd"; g.lineWidth = 2; g.beginPath(); g.moveTo(10, h - 12); g.lineTo(10 + step * sc, h - 12); g.stroke();
+  g.fillText(step + " m", 12, h - 16);
+  const path = (xa, ya, to, col, lw, dash) => {
+    g.beginPath(); g.setLineDash(dash || []); g.strokeStyle = col; g.lineWidth = lw;
+    for (let k = 0; k <= to; k++) { if (xa[k] == null) continue; k ? g.lineTo(X(xa[k]), Y(ya[k])) : g.moveTo(X(xa[k]), Y(ya[k])); }
+    g.stroke(); g.setLineDash([]);
+  };
+  path(S.truth_e, S.truth_n, S.t.length - 1, "#475569", 1.5, [4, 4]);
+  if (st.base) path(S.base_e, S.base_n, i, "#fb923c", 1.5);
+  g.lineWidth = 3;
+  for (let k = 1; k <= i; k++) {
+    g.strokeStyle = COL[S.dm[k]]; g.beginPath(); g.moveTo(X(S.e[k - 1]), Y(S.n[k - 1])); g.lineTo(X(S.e[k]), Y(S.n[k])); g.stroke();
+  }
+  const tnow = S.t[i];
+  g.fillStyle = "#e2e8f0";
+  for (let k = 0; k < S.gnss.t.length; k++) {
+    if (S.gnss.t[k] > tnow || tnow - S.gnss.t[k] > 25) continue;
+    g.beginPath(); g.arc(X(S.gnss.e[k]), Y(S.gnss.n[k]), 2.5, 0, 7); g.fill();
+  }
+  const px = X(S.e[i]), py = Y(S.n[i]), c = S.cov95_m[i];
+  if (c != null) {
+    g.beginPath(); g.arc(px, py, Math.max(4, c * sc), 0, 7); g.fillStyle = "rgba(251,191,36,.12)"; g.fill();
+    g.strokeStyle = "rgba(251,191,36,.8)"; g.lineWidth = 1.5; g.stroke();
+  }
+  const a = (S.heading[i] || 0) * Math.PI / 180, dx = Math.sin(a), dy = -Math.cos(a);
+  g.fillStyle = "#fff"; g.beginPath();
+  g.moveTo(px + dx * 11, py + dy * 11); g.lineTo(px - dx * 6 - dy * 6, py - dy * 6 + dx * 6); g.lineTo(px - dx * 6 + dy * 6, py - dy * 6 - dx * 6);
+  g.closePath(); g.fill();
+}
+
+function drawChart(i) {
+  const cv = $("#chart"), dpr = window.devicePixelRatio || 1, w = cv.clientWidth, h = cv.clientHeight;
+  if (!w || !h) return;
+  if (cv.width !== Math.round(w * dpr) || cv.height !== Math.round(h * dpr)) { cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr); }
+  const g = cv.getContext("2d"); g.setTransform(dpr, 0, 0, dpr, 0, 0); g.clearRect(0, 0, w, h);
+  const L = 44, R = 8, T = 8, B = 30, T1 = S.duration_s, X = t => L + t / T1 * (w - L - R), Y = v => h - B - v / S.emax * (h - T - B);
+  g.font = "11px system-ui"; g.fillStyle = "#93a1bd"; g.strokeStyle = "#16213a"; g.lineWidth = 1;
+  for (let v = 0; v <= S.emax; v += S.emax > 200 ? 100 : 50) { g.beginPath(); g.moveTo(L, Y(v)); g.lineTo(w - R, Y(v)); g.stroke(); g.fillText(v + " m", 4, Y(v) + 4); }
+  for (let t = 0; t <= T1; t += 20) g.fillText(t + " s", X(t) - 8, h - B + 14);
+  if (S.t1 != null) { g.fillStyle = "rgba(251,191,36,.10)"; g.fillRect(X(S.t0), T, X(S.t1) - X(S.t0), h - T - B); g.fillStyle = "#fde68a"; g.fillText("GNSS outage (simulated)", X(S.t0) + 4, T + 12); }
+  else { g.strokeStyle = "#f87171"; g.beginPath(); g.moveTo(X(S.t0), T); g.lineTo(X(S.t0), h - B); g.stroke(); g.fillStyle = "#fca5a5"; g.fillText("spoof starts (simulated)", X(S.t0) + 4, T + 12); }
+  for (let k = 1; k <= i; k++) { g.fillStyle = COL[S.dm[k]]; g.fillRect(X(S.t[k - 1]), h - B + 18, Math.max(1, X(S.t[k]) - X(S.t[k - 1])), 6); }
+  const line = (arr, col, dash) => {
+    g.beginPath(); g.strokeStyle = col; g.lineWidth = 2; g.setLineDash(dash || []); let on = false;
+    for (let k = 0; k <= i; k++) { if (arr[k] == null) { on = false; continue; } on ? g.lineTo(X(S.t[k]), Y(arr[k])) : g.moveTo(X(S.t[k]), Y(arr[k])); on = true; }
+    g.stroke(); g.setLineDash([]);
+  };
+  line(S.cov95_m, "#93a1bd", [5, 4]); line(S.berr, "#fb923c"); line(S.err, "#2dd4bf");
+  g.strokeStyle = "#e2e8f0"; g.lineWidth = 1; g.beginPath(); g.moveTo(X(S.t[i]), T); g.lineTo(X(S.t[i]), h - B); g.stroke();
+}
+
+function render() {
+  if (!S) return;
+  const i = idxNow(), mode = S.dm[i], trust = S.trust[i], c = S.cov95_m[i];
+  const col = COL[mode], gnssOk = mode === "GNSS";
+  $("#state").style.borderColor = col;
+  $("#stName").textContent = NAME[mode];
+  $("#stSub").textContent = gnssOk ? "TRUST " + trustLabel(trust) + " · fixes accepted by the integrity monitor"
+    : mode === "REACQUIRE" ? "VALIDATING GNSS · fixes are checked against the dead-reckoned estimate before they are trusted"
+    : "TRUST LOW · SIMULATED · IMU + AI speed + EKF + constraints carry the estimate";
+  $("#tMode").textContent = NAME[mode]; $("#tMode").style.color = col;
+  $("#tModeS").textContent = mode === "REACQUIRE" ? "engine in DR while its trust score recovers" : "engine state: " + S.modes[S.mode[i]];
+  $("#tTrust").textContent = trust == null ? NM : trustLabel(trust) + " (" + trust.toFixed(2) + ")";
+  $("#tTrustBar").style.width = (trust == null ? 0 : trust * 100) + "%"; $("#tTrustBar").style.background = col;
+  $("#tSpeed").textContent = fmt(S.speed_kmh[i], 0) + " km/h";
+  $("#tHead").textContent = "heading " + fmt(S.heading[i], 0) + "° (engine estimate)";
+  $("#tConf").textContent = c == null ? NM : "± " + c.toFixed(1) + " m";
+  $("#tConfS").textContent = confLabel(c) + " · 95 % radius from the filter's own covariance · GOOD ≤ 15 m, WARNING ≤ 50 m";
+  const dr = S.firstDR;
+  const step = gnssOk ? (dr >= 0 && i > dr ? 3 : 0) : mode === "REACQUIRE" ? 2 : 1;
+  $$("#stepper div").forEach((d, k) => d.classList.toggle("on", k === step));
+  const clk = "t = " + S.t[i].toFixed(1) + " s of " + S.duration_s.toFixed(0) + " s · SIMULATED REPLAY " + st.speed + "x" + (st.playing ? "" : " (paused)");
+  $("#clock1").textContent = clk; $("#clock2").textContent = clk;
+  $("#scrub").value = Math.round(S.t[i] / S.duration_s * 1000);
+  $("#btnPlay").textContent = st.playing ? "Pause" : "Play";
+  $("#errNow").textContent = "error now (simulated truth): DHRUVA " + S.err[i].toFixed(1) + " m, baseline " + S.berr[i].toFixed(1) + " m";
+  const lg = Object.keys(COL).map(k => '<span><b style="background:' + COL[k] + '"></b>' + NAME[k] + "</span>").join("") +
+    '<span><b style="background:#475569"></b>simulated ground truth</span><span><b style="background:#fb923c"></b>baseline</span><span>white dots: GNSS fixes received</span><span>amber ring: 95 % uncertainty</span>';
+  if ($("#lg1").innerHTML !== lg) { $("#lg1").innerHTML = lg; $("#lg2").innerHTML = lg; }
+  if (st.tab === "hud") drawMap($("#map1"), i);
+  if (st.tab === "replay") { drawMap($("#map2"), i); drawChart(i); }
+}
+
+function buildMetrics() {
+  const m = S.metrics, d = m.dhruva, b = m.baseline;
+  $("#mTitle").textContent = S.title + " (SIMULATED, n = 1)";
+  const rows = [["Metric", "DHRUVA (full pipeline)", "Baseline (gyro heading, held GNSS speed)"]];
+  const add = (k, x, y, nd, u) => rows.push([k, x == null ? NM : x.toFixed(nd) + u, y == null ? "— n/a" : y.toFixed(nd) + u]);
+  if (S.kind === "outage") {
+    add("Endpoint error at outage end", d.endpoint_err_m, b.endpoint_err_m, 1, " m");
+    add("Max error during outage", d.max_err_m, b.max_err_m, 1, " m");
+    add("Distance travelled in outage", d.distance_m, b.distance_m, 0, " m");
+    add("Drift, % of distance", d.drift_pct, b.drift_pct, 2, " %");
+    add("Error per km", d.err_per_km_m, b.err_per_km_m, 1, " m/km");
+    add("95 % ellipse coverage", d.coverage_pct, null, 0, " %");
+    add("Re-entry jump when GNSS returns", d.reentry_jump_m, b.reentry_jump_m, 1, " m");
+    add("Time to enter DR mode after GNSS loss", d.time_to_dr_s, null, 1, " s");
+    rows.push(["PS benchmark (drift ≤ 10 % and ≤ 100 m per km)", d.ps_pass ? "PASS (simulated)" : "FAIL (simulated)", b.ps_pass ? "PASS (simulated)" : "FAIL (simulated)"]);
+  } else {
+    add("Time from spoof start to rejection", d.time_to_detect_s, null, 1, " s");
+    add("Max error after spoof start", d.max_err_after_m, b.max_err_after_m, 1, " m");
+    add("Error at end of run", d.final_err_m, b.final_err_m, 1, " m");
+    if (d.time_to_detect_s == null) rows.push(["Spoof detected", "NO (not rejected in this run)", "— no monitor"]);
+  }
+  $("#mTable").innerHTML = rows.map((r, k) => "<tr>" + r.map(c => (k ? "<td class='n" + (String(c).indexOf("NOT MEAS") >= 0 ? " nm" : "") + "'>" : "<th>") + c + (k ? "</td>" : "</th>")).join("") + "</tr>").join("");
+}
+
+$("#nmTable").innerHTML = [
+  ["Accuracy or drift on real phone drives", NM], ["Any real or public dataset (data/raw/ is empty)", NM],
+  ["Vehicle-grade sensor results", NM], ["Map-matched accuracy (matcher exists, not wired into the engine)", NM],
+  ["On-device latency and battery (no Android app yet)", NM],
+  ["Statistics over many drives (harness exists, full matrix not run for this demo)", NM],
+  ["Spoof detection rate and false alarms on real data", NM]].map(r => "<tr><td>" + r[0] + "</td><td class='nm'>" + r[1] + "</td></tr>").join("");
+
+function tab(name) {
+  st.tab = name;
+  $$("nav button").forEach(b => b.setAttribute("aria-selected", b.dataset.tab === name));
+  ["hud", "replay", "metrics"].forEach(t => { $("#tab-" + t).hidden = t !== name; });
+  render();
+}
+
+let last = 0;
+function loop(ts) {
+  const dt = Math.min(.1, (ts - last) / 1000); last = ts;
+  if (S && st.playing) {
+    st.tp += dt * st.speed;
+    if (st.tp >= S.duration_s) { st.tp = S.duration_s; st.playing = false; }
+    render();
+  }
+  requestAnimationFrame(loop);
+}
+
+if (!D) { $("#err").hidden = false; }
+else {
+  $("#prov").innerHTML = "<small>Source: scripts/make_demo.py, seed " + D.seed + " (" + D.split + " split, first drive, not chosen by result), " + D.grade + "-grade sensor model. engine.json SHA-256 " + D.engine_json_sha256.slice(0, 16) + "…</small>";
+  $$("nav button").forEach(b => b.addEventListener("click", () => tab(b.dataset.tab)));
+  $$("[data-sid]").forEach(b => b.addEventListener("click", () => setScenario(b.dataset.sid)));
+  $$("[data-spd]").forEach(b => b.addEventListener("click", () => { st.speed = +b.dataset.spd; $$("[data-spd]").forEach(x => x.setAttribute("aria-pressed", x === b)); render(); }));
+  $("#btnOutage").addEventListener("click", () => { setScenario("outage"); st.speed = 4; st.playing = true; render(); });
+  $("#btnSpoof").addEventListener("click", () => { setScenario("spoof_step"); st.speed = 4; st.playing = true; render(); });
+  $("#btnPlay").addEventListener("click", () => { if (st.tp >= S.duration_s) st.tp = 0; st.playing = !st.playing; render(); });
+  $("#btnRestart").addEventListener("click", () => { st.tp = 0; st.playing = true; render(); });
+  $("#chkBase").addEventListener("change", e => { st.base = e.target.checked; render(); });
+  $("#scrub").addEventListener("input", e => { st.tp = e.target.value / 1000 * S.duration_s; st.playing = false; render(); });
+  window.addEventListener("resize", render);
+  $$("[data-spd]").forEach(x => x.setAttribute("aria-pressed", +x.dataset.spd === st.speed));
+  setScenario("outage");
+  requestAnimationFrame(loop);
+}
+</script>
+</body>
+</html>

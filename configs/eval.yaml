@@ -1,0 +1,24 @@
+# Evaluation matrix. Every number in docs/RESULTS.md is computed from the runs this file describes.
+# Only SYNTHETIC data exists so far (see docs/DATA_STATUS.md); real datasets are NOT MEASURED.
+id: eval
+label: SYNTHETIC
+grade: PHONE                    # IMU/GNSS model of an ordinary phone. Vehicle-grade is never mixed in.
+split: test                     # from data/splits.yaml (trajectory-level split, never tuned on)
+trajectories: 40                # first N drives of the split
+drive: {duration_s: 185.0, outage_start_min_s: 35.0, tail_s: 15.0}   # scoring starts after alignment has converged
+outage_s: [30, 60, 120]
+windows_per_trajectory: 5       # seeded random start where speed > 5 m/s
+ablations: [baseline, physics, nhc, ml, integrity]   # cumulative ladder; see dhruva/eval/runner.py
+attack:
+  step_m: 500.0
+  ramp_mps: 2.0
+  duration_s: 120.0             # drive length for attack runs
+  start_range_s: [40.0, 70.0]
+map: not_measured               # no road network for the synthetic drives; map-matched numbers are never invented
+seed_offset: 7
+jobs: 8
+sample:                         # small committed set of full runs for the dashboard and tests
+  dir: runs/sample
+  trajectories: 1
+  outage_s: 60
+  ablations: [baseline, integrity]

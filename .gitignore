@@ -18,6 +18,7 @@ local.properties
 # tooling
 .remember/
 .claude/
+.playwright-mcp/
 # secrets
 .env
 .env.*

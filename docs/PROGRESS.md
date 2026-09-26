@@ -11,10 +11,13 @@ Shell setup (each new shell on this machine):
 - [ ] `contracts/nav_state.schema.json` — blocked: `nav_state.ts` not on disk (see BLOCKERS.md)
 
 ## P1 geo + simulator + metrics + fixtures
-- [ ] geo (psi convention, round-trip < 1 mm)
-- [ ] simulator (seeded, phone-grade IMU, GNSS, outages, spoof step/ramp)
-- [ ] metrics (hand-computed unit tests)
-- [ ] 3 fixtures + `scripts/cut_fixture.py`
+- [x] geo (psi convention, round-trip < 1 mm, heading table)
+- [x] simulator (seeded, phone-grade IMU with random mount, GNSS 1 Hz, outages, spoof step/ramp)
+- [x] metrics (hand-computed unit tests: outage, re-entry jump, time-to-detect, spoof stats, summarize)
+- [x] 3 SYNTHETIC fixtures (3000 rows each) + `scripts/make_fixtures.py` + `scripts/cut_fixture.py`
+- [x] Gate: metrics + sim tests green (`make test-fast`: 67 passed, ~5 s)
+- Known gaps: `speednet_mu/logvar` columns are blank until P4; IMU timestamp jitter is not modelled;
+  real-logger -> unified-fixture converter waits for real data (P6/P9).
 
 ## P2-P10
 Not started. Web (P8) and Android (P9) also wait on `design/stitch/`.

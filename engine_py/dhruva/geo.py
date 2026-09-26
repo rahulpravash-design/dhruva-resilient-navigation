@@ -26,3 +26,18 @@ def offset_latlon(lat, lon, dist_m, bearing_deg):
     dlat = np.degrees(dist_m * np.cos(b) / EARTH_R)
     dlon = np.degrees(dist_m * np.sin(b) / (EARTH_R * np.cos(np.radians(lat))))
     return lat + dlat, lon + dlon
+
+
+def wrap_pi(a):
+    """Wrap angle(s) in radians to (-pi, pi]."""
+    w = (np.asarray(a, float) + np.pi) % (2 * np.pi) - np.pi
+    return np.where(w == -np.pi, np.pi, w)
+
+
+def psi_to_heading_deg(psi):
+    """Internal yaw psi (rad, CCW from East) -> UI heading (deg, clockwise from North)."""
+    return (90.0 - np.degrees(np.asarray(psi, float))) % 360.0
+
+
+def heading_deg_to_psi(heading_deg):
+    return wrap_pi(np.radians(90.0 - np.asarray(heading_deg, float)))

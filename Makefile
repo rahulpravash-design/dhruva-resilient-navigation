@@ -7,12 +7,15 @@ PY := .venv/bin/python
 endif
 GRADLE ?= gradle
 
-.PHONY: setup test-fast test-golden test-ui test-full golden-update
+.PHONY: setup setup-ml test-fast test-golden test-ui test-full golden-update
 
 setup:
 	$(PYTHON) -m venv .venv
 	$(PY) -m pip install -q --upgrade pip
 	$(PY) -m pip install -q -r requirements.txt
+
+setup-ml:
+	$(PY) -m pip install -q -r requirements-ml.txt
 
 test-fast:
 	$(PY) -m ruff check engine_py scripts

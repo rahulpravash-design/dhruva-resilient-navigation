@@ -51,5 +51,24 @@ Shell setup (each new shell on this machine):
   (5) Limitations: a phone rotated only about the vertical axis is not detected as a move; thresholds were tuned on the
   simulator only and phone vibration will need retuning on real data.
 
-## P4-P10
+## P4 SpeedNet (SYNTHETIC only)
+- [x] Keras 1D-CNN (47,394 trainable params, <= 50k), Gaussian NLL, softplus mu / clipped logvar, normalisation embedded
+- [x] Float16 TFLite (111 KB) + `models/model_card.json`; Keras vs TFLite mean |d mu| < 0.05 m/s and < 5 ms/window (tests, test-full)
+- [x] EKF pseudo-measurement (`EngineFlags.use_ml`, default off so goldens are unchanged); fixtures annotated with `speednet_mu/logvar`
+- [x] Fixed trajectory splits in `data/splits.yaml` (train 150 / val 30 / test 40 synthetic drives)
+- [x] Gate: held-out drift reduced. Test split, MountAligner + EKF, injected outages (SYNTHETIC, assumed vibration model):
+  | outage | metric | without SpeedNet | with SpeedNet |
+  |---|---|---|---|
+  | 30 s (n=20) | median endpoint error | 34.7 m | 14.1 m |
+  | 30 s | median drift / PS pass rate | 16.9 % / 35 % | 4.9 % / 65 % |
+  | 60 s (n=18) | median endpoint error | 61.2 m | 28.6 m |
+  | 60 s | median drift / PS pass rate | 7.0 % / 56 % | 6.9 % / 67 % |
+- **Caveat that matters:** the vibration SpeedNet exploits is an assumption built into the simulator
+  (`docs/SPEEDNET_ASSUMPTIONS.md`). This shows the pipeline works, not that SpeedNet works on a real phone.
+- **Open problems found (BLOCKERS B4):** (a) the 95 % circle is badly overconfident on these drives (median coverage 0-12 %,
+  target ~95 %); (b) without SpeedNet the engine has heavy-tailed failures (p90 endpoint error 250-400 m) on random drives;
+  (c) SpeedNet's own 1-sigma coverage is 64 % (ideal 68 %), 2-sigma 91 % (ideal 95 %).
+- Notes: `tf.lite.Interpreter` is deprecated in TF 2.20+ (Android will use LiteRT anyway); live app must resample IMU to 100 Hz.
+
+## P5-P10
 Not started. Web (P8) and Android (P9) also wait on `design/stitch/`.

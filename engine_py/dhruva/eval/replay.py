@@ -21,9 +21,9 @@ def load_fixture(name, fixture_dir=None):
     return df, meta, OracleAligner(meta["R_pv"])
 
 
-def run_fixture(df, aligner, engine_cls=Engine, flags=None, config=None):
+def run_fixture(df, aligner, engine_cls=Engine, flags=None, config=None, speed_estimator=None):
     """Feed every row to the engine. Returns (timeline_df, log_df)."""
-    eng = engine_cls(config or load_config(), flags or EngineFlags(), aligner)
+    eng = engine_cls(config or load_config(), flags or EngineFlags(), aligner, speed_estimator)
     t = df["t"].to_numpy()
     acc = df[["ax", "ay", "az"]].to_numpy()
     gyr = df[["gx", "gy", "gz"]].to_numpy()

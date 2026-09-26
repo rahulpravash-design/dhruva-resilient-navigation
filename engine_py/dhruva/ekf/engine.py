@@ -76,6 +76,15 @@ class Engine(EngineBase):
                          np.array([[k["nhc_sigma_mps"] ** 2]]))
             self._nhc = True
 
+        window = self._ml_window()
+        if window is not None:
+            mu, logvar = self.speed_estimator.estimate(window)
+            c, s = np.cos(x[4]), np.sin(x[4])
+            Hs = np.zeros((1, 8))
+            Hs[0, 2], Hs[0, 3], Hs[0, 4] = c, s, -s * x[2] + c * x[3]
+            var = max(float(np.exp(logvar)), k["speednet_var_floor"])
+            self._update(t, "speednet", [mu], [c * x[2] + s * x[3]], Hs, np.array([[var]]))
+
     def _snapshot(self, t):
         x = self.ekf.x
         lat, lon = self._pos_latlon(x[0], x[1])

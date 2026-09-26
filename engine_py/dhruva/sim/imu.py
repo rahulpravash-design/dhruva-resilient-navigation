@@ -4,6 +4,7 @@ from dataclasses import dataclass
 import numpy as np
 
 G = 9.80665
+WHEEL_RADIUS_M = 0.31
 
 
 @dataclass(frozen=True)
@@ -15,6 +16,9 @@ class ImuParams:
     accel_bias_std: float = 0.05    # m/s^2
     accel_bias_rw: float = 5e-4     # m/s^2/sqrt(s)
     scale_std: float = 0.005        # multiplicative scale-factor error
+    # ASSUMED road-vibration model (not measured): accel vibration in the vehicle frame whose amplitude grows with
+    # speed, white plus a tone at the wheel-rotation rate. 0 disables it. See docs/SPEEDNET_ASSUMPTIONS.md.
+    vib_gain: float = 0.0           # m/s^2 of vibration std per m/s of speed
 
     @classmethod
     def zero(cls):
@@ -92,4 +96,14 @@ def phone_imu(traj, R_pv, params, rng, dt, move=None):
         + rng.normal(0, params.accel_noise_std, (n, 3))
     gyr = gyr * scale_g + bias(params.gyro_bias_std, params.gyro_bias_rw) \
         + rng.normal(0, params.gyro_noise_std, (n, 3))
+
+    if params.vib_gain > 0:   # drawn last so seeds without vibration are unchanged
+        v = traj["v"]
+        wheel_hz = v / (2 * np.pi * WHEEL_RADIUS_M)
+        phase = 2 * np.pi * np.cumsum(wheel_hz) * dt + rng.uniform(0, 2 * np.pi)
+        amp = params.vib_gain * v
+        white = rng.normal(0.0, 1.0, (n, 3)) * amp[:, None] * np.array([0.4, 0.4, 1.0])
+        tone = (0.8 * amp * np.sin(phase))[:, None] * np.array([0.3, 0.3, 1.0])
+        vib_veh = white + tone
+        acc = acc + (vib_veh @ R_pv.T if move is None else np.einsum("nij,nj->ni", Rt, vib_veh))
     return acc, gyr

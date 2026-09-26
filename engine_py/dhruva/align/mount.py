@@ -208,6 +208,11 @@ class MountAligner:
         Rz = np.array([[c, s, 0.0], [-s, c, 0.0], [0.0, 0.0, 1.0]])   # Rz(-alpha)
         return Rz @ self._level()
 
+    def to_vehicle_full(self, acc, gyr):
+        """Phone-frame accel/gyro -> full 3-axis vehicle-frame vectors (for SpeedNet features)."""
+        R = self.R_vp
+        return R @ np.asarray(acc, float), R @ np.asarray(gyr, float)
+
     def to_vehicle(self, acc, gyr):
         """Phone-frame accel/gyro -> (fx, fy, wz) in the vehicle frame."""
         f = self.R_vp @ np.asarray(acc, float)

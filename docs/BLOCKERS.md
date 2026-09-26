@@ -17,3 +17,11 @@
   Hybrid test: estimated yaw rate is harmless; the residual comes from the levelled horizontal force (tilt error 0.3-0.8 deg).
 - Hypothesis: a tilt/leak state in the EKF or GNSS-aided tilt refinement would close the gap; SpeedNet (P4) also bounds the
   forward-speed error that the leak causes. Deferred rather than over-tuned on the simulator.
+
+## B4: engine uncertainty is overconfident and has heavy-tailed failures on random drives (open)
+- Symptom (P4 held-out eval, SYNTHETIC): median 95 %-circle coverage during outages 0-12 % (target ~95 %); p90 endpoint error
+  250-400 m without SpeedNet, 66-328 m with it. Fixture-like drives behave far better (1-8 m), so random dynamics
+  (stops, hard turns, speed changes, wrong-but-confident alignment) expose weaknesses.
+- Not yet tried: inflating process noise for the accel/heading leak terms; a covariance floor tied to alignment confidence;
+  inspecting the worst seeds (stops, alignment yaw error at confident=True, ZUPT thresholds).
+- Plan: diagnose the worst seeds and calibrate covariance as part of P5/P6 (integrity + eval), since coverage is a headline metric.

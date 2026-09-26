@@ -1,8 +1,6 @@
 # data & outputs
 data/raw/
 runs/
-*.tflite
-*.keras
 # python
 __pycache__/
 *.pyc

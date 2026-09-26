@@ -6,6 +6,7 @@ import numpy as np
 import pandas as pd
 
 from ..geo import to_enu, to_latlon
+from ..speednet.features import WindowBuffer, feature_row
 
 TIMELINE_COLUMNS = ("t", "lat", "lon", "speed", "psi", "cov95_m", "mode", "gyro_bias", "nhc_active", "zupt_active")
 MODE_SLACK_S = 0.05  # scheduling slack so a fix arriving exactly 1.0 s after the last one is not a gap
@@ -15,6 +16,7 @@ MODE_SLACK_S = 0.05  # scheduling slack so a fix arriving exactly 1.0 s after th
 class EngineFlags:
     use_nhc: bool = True
     use_zupt: bool = True                 # ZUPT + ZARU
+    use_ml: bool = False                  # SpeedNet speed pseudo-measurement (needs a speed_estimator)
     force_outage: tuple = ()              # ((t_start, dur_s), ...) fixes dropped inside these windows
 
 
@@ -33,10 +35,14 @@ class EngineState:
 
 
 class EngineBase:
-    def __init__(self, config, flags=None, aligner=None):
+    def __init__(self, config, flags=None, aligner=None, speed_estimator=None):
         self.cfg = config
         self.flags = flags or EngineFlags()
+        if self.flags.use_ml and speed_estimator is None:
+            raise ValueError("use_ml requires a speed_estimator")
         self.aligner = aligner
+        self.speed_estimator = speed_estimator
+        self._feat = WindowBuffer(config["speednet"]["window_samples"])
         self.origin = None
         self.t = None
         self._last_fix_t = -np.inf
@@ -59,6 +65,12 @@ class EngineBase:
             self._propagate((fx, fy) if self.aligner.confident else None, wz, dt)
             self.t = t
         self._push_window(t, acc, gyr, wz)
+        if self.flags.use_ml:
+            if self.aligner.confident:
+                a_v, w_v = self.aligner.to_vehicle_full(acc, gyr)
+                self._feat.push(feature_row(a_v, w_v, self.cfg["gravity_mps2"]))
+            else:
+                self._feat.clear()          # levelled frame not trustworthy: restart the window
         while t >= self._next_tick - 1e-9:
             self._tick(t)
             self._next_tick += self._tick_dt
@@ -119,6 +131,9 @@ class EngineBase:
     def _record(self, t):
         row = self._snapshot(t)
         self._timeline.append([row[c] for c in TIMELINE_COLUMNS])
+
+    def _ml_window(self):
+        return self._feat.window() if self.flags.use_ml and self._feat.full else None
 
     def _tick(self, t):
         self._nhc = self._zupt = False

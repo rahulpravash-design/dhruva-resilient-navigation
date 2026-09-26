@@ -73,7 +73,10 @@
     "logvar_clip": [
       -6.0,
       4.0
-    ]
+    ],
+    "window_samples": 150,
+    "n_features": 7,
+    "imu_rate_hz": 100
   },
   "integrity": {
     "chi2_99_2dof": 9.21,

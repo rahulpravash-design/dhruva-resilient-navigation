@@ -1,0 +1,89 @@
+{
+  "label": "SYNTHETIC",
+  "split": "test",
+  "drives": 40,
+  "pipeline": "MountAligner + EKF",
+  "note": "Assumed vibration model; not evidence of real-world performance.",
+  "by_outage_s": {
+    "30": {
+      "without_speednet": {
+        "n": 20,
+        "endpoint_err_m": {
+          "median": 34.66956807919373,
+          "p90": 248.0822486044337,
+          "n": 20
+        },
+        "drift_pct": {
+          "median": 16.925530427407484,
+          "p90": 84.59848938494976,
+          "n": 20
+        },
+        "coverage_pct": {
+          "median": 0.0,
+          "p90": 20.724860646599794,
+          "n": 20
+        },
+        "ps_pass_rate": 0.35
+      },
+      "with_speednet": {
+        "n": 20,
+        "endpoint_err_m": {
+          "median": 14.13610015648496,
+          "p90": 65.75847460053158,
+          "n": 20
+        },
+        "drift_pct": {
+          "median": 4.93939250222461,
+          "p90": 37.88948135200963,
+          "n": 20
+        },
+        "coverage_pct": {
+          "median": 11.849498327759198,
+          "p90": 55.133333333333354,
+          "n": 20
+        },
+        "ps_pass_rate": 0.65
+      }
+    },
+    "60": {
+      "without_speednet": {
+        "n": 18,
+        "endpoint_err_m": {
+          "median": 61.15535351091491,
+          "p90": 396.9824375859687,
+          "n": 18
+        },
+        "drift_pct": {
+          "median": 7.029536351493797,
+          "p90": 104.76355547807808,
+          "n": 18
+        },
+        "coverage_pct": {
+          "median": 1.8333333333333335,
+          "p90": 63.71666666666668,
+          "n": 18
+        },
+        "ps_pass_rate": 0.5555555555555556
+      },
+      "with_speednet": {
+        "n": 18,
+        "endpoint_err_m": {
+          "median": 28.56338706099296,
+          "p90": 327.57899268502774,
+          "n": 18
+        },
+        "drift_pct": {
+          "median": 6.940740019647053,
+          "p90": 54.16891315117618,
+          "n": 18
+        },
+        "coverage_pct": {
+          "median": 2.083333333333333,
+          "p90": 76.08333333333334,
+          "n": 18
+        },
+        "ps_pass_rate": 0.6666666666666666
+      }
+    }
+  }
+}

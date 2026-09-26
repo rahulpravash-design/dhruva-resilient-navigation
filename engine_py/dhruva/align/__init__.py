@@ -19,6 +19,9 @@ class OracleAligner:
     def on_gnss(self, t, speed):
         pass
 
+    def to_vehicle_full(self, acc, gyr):
+        return self.R.T @ np.asarray(acc, float), self.R.T @ np.asarray(gyr, float)
+
     def to_vehicle(self, acc, gyr):
         """Phone-frame accel/gyro -> (fx, fy, wz) in the vehicle frame (x fwd, y left, z up)."""
         f = self.R.T @ np.asarray(acc, float)

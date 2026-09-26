@@ -26,7 +26,7 @@ def _lowpass(target, tau, x0):
 
 def make_trajectory(segments, psi0=0.3, accel_max=1.5, brake_max=2.5):
     """Return dict of per-row truth: t, e, n, v, psi, omega, a_long (all float64)."""
-    n = round(sum(s.dur for s in segments) / DT)
+    n = sum(round(s.dur / DT) for s in segments)
     v_cmd = np.empty(n)
     w_cmd = np.zeros(n)
     k = 0

@@ -1,0 +1,72 @@
+{
+  "name": "speednet",
+  "label": "SYNTHETIC",
+  "trainable_params": 47394,
+  "tflite_size_kb": 108.4,
+  "tflite_precision": "float16 weights",
+  "window": {
+    "samples": 150,
+    "rate_hz": 100,
+    "features": [
+      "ax",
+      "ay",
+      "az-g",
+      "gx",
+      "gy",
+      "gz",
+      "|a_h|"
+    ],
+    "frame": "levelled vehicle frame"
+  },
+  "normalisation": {
+    "mean": [
+      -0.008849682286381721,
+      -0.05490446090698242,
+      -0.008694044314324856,
+      0.00027423942810855806,
+      -0.0001810110843507573,
+      -0.00291865854524076,
+      1.3429149389266968
+    ],
+    "std": [
+      1.1026692390441895,
+      1.4188232421875,
+      0.5111010670661926,
+      0.005573150236159563,
+      0.005029792431741953,
+      0.12622152268886566,
+      1.1768542528152466
+    ],
+    "embedded_in_model": true
+  },
+  "data_sources": [
+    "SYNTHETIC: dhruva.sim with ASSUMED speed-dependent vibration (see docs/SPEEDNET_ASSUMPTIONS.md)"
+  ],
+  "splits": {
+    "train_drives": 150,
+    "val_drives": 30,
+    "train_windows": 91869,
+    "val_windows": 18393
+  },
+  "val": {
+    "rmse_mps": 0.41765323281288147,
+    "nll": -0.5880215167999268,
+    "coverage_1sigma": 0.6435600500190289,
+    "coverage_2sigma": 0.9106725384657206
+  },
+  "epochs_run": 23,
+  "limitations": [
+    "Trained only on simulated drives with an assumed vibration model: no real-world performance claim.",
+    "Input must be resampled to 100 Hz and levelled by the aligner."
+  ],
+  "heldout_engine_eval": {
+    "file": "models/speednet_eval.json",
+    "label": "SYNTHETIC",
+    "summary": "median endpoint error 34.7->14.1 m (30 s outages) and 61.2->28.6 m (60 s) with SpeedNet on the synthetic test split"
+  },
+  "uncertainty_calibration_val": {
+    "coverage_1sigma": 0.6435600500190289,
+    "coverage_2sigma": 0.9106725384657206,
+    "note": "slightly overconfident (ideal 0.68 / 0.95)"
+  }
+}

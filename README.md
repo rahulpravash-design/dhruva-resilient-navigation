@@ -1,4 +1,4 @@
-# DHRUVA
+# DHRUVA — Resilient Navigation
 
 **Navigation that does not stop where the sky does.** DHRUVA is a smartphone-only, AI-assisted dead-reckoning engine built for ISRO problem statement SIH26168. When GNSS is lost, degraded or untrustworthy, it keeps a position estimate going from the phone's own IMU, a small learned speed model, an error-state Kalman filter and motion constraints. It also checks GNSS integrity, so a returning or spoofed fix is validated before it is trusted.
 
@@ -66,3 +66,7 @@ Simulated results are not field measurements. They show how the engine behaves i
 | Person 2 | Frontend |
 | Person 3 | Testing |
 | Person 4 | UI/UX |
+
+## Repository
+
+https://github.com/rahulpravash-design/dhruva-resilient-navigation

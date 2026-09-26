@@ -50,12 +50,13 @@ class EngineBase:
 
     # ---- public interface -------------------------------------------------
     def on_imu(self, t, acc, gyr):
+        self.aligner.on_imu(t, acc, gyr)
         if self.origin is None:
             return
         fx, fy, wz = self.aligner.to_vehicle(acc, gyr)
         dt = t - self.t
         if dt > 0:
-            self._propagate((fx, fy), wz, dt)
+            self._propagate((fx, fy) if self.aligner.confident else None, wz, dt)
             self.t = t
         self._push_window(t, acc, gyr, wz)
         while t >= self._next_tick - 1e-9:
@@ -65,6 +66,8 @@ class EngineBase:
     def on_gnss(self, t, fix):
         if any(t0 <= t < t0 + d for t0, d in self.flags.force_outage):
             return
+        if np.isfinite(fix.get("speed", np.nan)):
+            self.aligner.on_gnss(t, fix["speed"])
         if self.origin is None:
             self.origin = (fix["lat"], fix["lon"])
             self.t = t
@@ -104,7 +107,10 @@ class EngineBase:
 
     def _mode(self, t):
         timeout = self.cfg["integrity"]["no_fix_timeout_s"] + MODE_SLACK_S
-        return "GNSS" if t - self._last_fix_t <= timeout else "DR"
+        gnss = t - self._last_fix_t <= timeout
+        if self.aligner.realigning or (not gnss and not self.aligner.confident):
+            return "DEGRADED"
+        return "GNSS" if gnss else "DR"
 
     def _pos_latlon(self, e, n):
         lat, lon = to_latlon(e, n, *self.origin)

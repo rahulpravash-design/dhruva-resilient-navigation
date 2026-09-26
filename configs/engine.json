@@ -12,7 +12,32 @@
       "speed_min_mps": 5.0
     },
     "realign_gravity_change_deg": 10.0,
-    "realign_within_s": 1.0
+    "realign_within_s": 1.0,
+    "_tuning_note": "Alignment tunables are initial values tuned on simulated drives only.",
+    "gravity_tau_s": 8.0,
+    "gravity_init_s": 1.0,
+    "gravity_init_tau_s": 0.3,
+    "gravity_gate_norm_mps2": 0.5,
+    "gravity_gate_gyro_radps": 0.1,
+    "gravity_gate_along_mps2": 0.3,
+    "forget_per_s": 0.995,
+    "yaw_speed_min_mps": 2.0,
+    "straight_speed_min_mps": 5.0,
+    "straight_gyro_z_max_radps": 0.03,
+    "min_excitation_m2ps3": 2.0,
+    "confident_threshold": 0.5,
+    "realign_hold_s": 1.5,
+    "realign_done_confidence": 0.5,
+    "vibration_tau_s": 2.0,
+    "loose_vibration_rms_mps2": 0.5,
+    "gyro_bias_tau_s": 30.0,
+    "gyro_bias_gate_radps": 0.05,
+    "yaw_along_gate_mps2": 0.5,
+    "gravity_dev_fast_tau_s": 0.3,
+    "gravity_dev_slow_tau_s": 4.0,
+    "gravity_gate_dev_mps2": 0.25,
+    "gravity_hold_s": 2.0,
+    "gravity_gnss_fresh_s": 2.0
   },
   "ekf": {
     "gnss_pos_sigma_floor_m": 3.0,
@@ -39,7 +64,8 @@
       "gyro_bias_sigma_radps": 0.01,
       "accel_bias_sigma_mps2": 0.1
     },
-    "zupt_speed_max_mps": 1.0
+    "zupt_speed_max_mps": 1.0,
+    "no_accel_noise_mps2_rthz": 1.0
   },
   "speednet": {
     "window_s": 1.5,

@@ -44,13 +44,41 @@ def random_mount(rng, max_tilt_deg=60.0):
     return _rz(yaw) @ _rx(roll) @ _ry(pitch)
 
 
-def phone_imu(traj, R_pv, params, rng, dt):
-    """Truth (vehicle frame) -> phone-frame accel [m/s^2] and gyro [rad/s], each (n, 3)."""
+def _rot_axis(axis, theta):
+    """Rodrigues rotation matrices (n, 3, 3) about a fixed unit axis for angles theta (n,)."""
+    a = np.asarray(axis, float) / np.linalg.norm(axis)
+    K = np.array([[0, -a[2], a[1]], [a[2], 0, -a[0]], [-a[1], a[0], 0]])
+    th = np.asarray(theta)[:, None, None]
+    return np.eye(3) + np.sin(th) * K + (1 - np.cos(th)) * (K @ K)
+
+
+def mount_after_move(R_pv, move):
+    """Final R_pv after a phone move (t_start, dur_s, angle_deg, axis_in_vehicle_frame)."""
+    return R_pv @ _rot_axis(move[3], [np.radians(move[2])])[0]
+
+
+def phone_imu(traj, R_pv, params, rng, dt, move=None):
+    """Truth (vehicle frame) -> phone-frame accel [m/s^2] and gyro [rad/s], each (n, 3).
+
+    move: optional (t_start, dur_s, angle_deg, axis_in_vehicle_frame). The phone is rotated relative to the
+    vehicle by a smoothstep angle about a vehicle-fixed axis; the gyro sees that rotation, so the phone-frame
+    gravity direction stays consistent with it.
+    """
     n = len(traj["t"])
     f_veh = np.stack([traj["a_long"], traj["v"] * traj["omega"], np.full(n, G)], axis=1)
     w_veh = np.stack([np.zeros(n), np.zeros(n), traj["omega"]], axis=1)
-    acc = f_veh @ R_pv.T
-    gyr = w_veh @ R_pv.T
+    if move is None:
+        acc = f_veh @ R_pv.T
+        gyr = w_veh @ R_pv.T
+    else:
+        t_start, dur, angle_deg, axis = move
+        x = np.clip((traj["t"] - t_start) / dur, 0.0, 1.0)
+        theta = np.radians(angle_deg) * (3 * x ** 2 - 2 * x ** 3)
+        theta_dot = np.radians(angle_deg) * (6 * x - 6 * x ** 2) / dur * ((x > 0) & (x < 1))
+        Rt = R_pv @ _rot_axis(axis, theta)                       # (n, 3, 3), phone <- vehicle over time
+        a_u = np.asarray(axis, float) / np.linalg.norm(axis)
+        acc = np.einsum("nij,nj->ni", Rt, f_veh)
+        gyr = np.einsum("nij,nj->ni", Rt, w_veh) - theta_dot[:, None] * np.einsum("nij,j->ni", Rt, a_u)
 
     scale_a = 1.0 + rng.normal(0, params.scale_std, 3)
     scale_g = 1.0 + rng.normal(0, params.scale_std, 3)

@@ -24,7 +24,8 @@ class Engine(EngineBase):
             P0[4, 4] = ini["no_bearing_psi_sigma_rad"] ** 2
             P0[2, 2] = P0[3, 3] = max(speed, 1.0) ** 2
         self.ekf = PlanarEkf(x0, P0, k["accel_noise_mps2_rthz"], k["gyro_noise_radps_rthz"],
-                             k["gyro_bias_rw_radps_rts"], k["accel_bias_rw_mps2_rts"])
+                             k["gyro_bias_rw_radps_rts"], k["accel_bias_rw_mps2_rts"],
+                             k["no_accel_noise_mps2_rthz"])
 
     def _propagate(self, f, wz, dt):
         self.ekf.predict(f, wz, dt)

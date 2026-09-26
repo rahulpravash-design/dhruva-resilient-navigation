@@ -8,23 +8,28 @@ _I8 = np.eye(8)
 
 
 class PlanarEkf:
-    def __init__(self, x0, P0, accel_noise, gyro_noise, gyro_bias_rw, accel_bias_rw):
+    def __init__(self, x0, P0, accel_noise, gyro_noise, gyro_bias_rw, accel_bias_rw, no_accel_noise):
         self.x = np.array(x0, float)
         self.P = np.array(P0, float)
         self.q = (accel_noise, gyro_noise, gyro_bias_rw, accel_bias_rw)
+        self.q_no_accel = no_accel_noise
 
     def predict(self, f, wz, dt):
-        """f: levelled vehicle-frame horizontal specific force (fx, fy); wz: yaw rate [rad/s]."""
+        """f: levelled vehicle-frame horizontal specific force (fx, fy), or None when the accelerometer
+        cannot be trusted (mount not aligned): then velocity is held with a large process noise.
+        wz: yaw rate [rad/s]."""
         x = self.x
         c, s = np.cos(x[4]), np.sin(x[4])
         R = np.array([[c, -s], [s, c]])
-        a = R @ (np.asarray(f, float) - x[6:8])
-
         F = np.zeros((8, 8))
         F[0, 2] = F[1, 3] = 1.0
-        F[2:4, 4] = _J @ a
-        F[2:4, 6:8] = -R
         F[4, 5] = -1.0
+        if f is None:
+            a = np.zeros(2)
+        else:
+            a = R @ (np.asarray(f, float) - x[6:8])
+            F[2:4, 4] = _J @ a
+            F[2:4, 6:8] = -R
         Phi = _I8 + F * dt + 0.5 * (F @ F) * dt * dt
 
         x[0:2] += x[2:4] * dt + 0.5 * a * dt * dt
@@ -32,6 +37,8 @@ class PlanarEkf:
         x[4] = float(wrap_pi(x[4] + (wz - x[5]) * dt))
 
         qa, qg, qbg, qba = self.q
+        if f is None:
+            qa = self.q_no_accel
         Q = np.zeros((8, 8))
         Q[2, 2] = Q[3, 3] = qa * qa * dt
         Q[4, 4] = qg * qg * dt

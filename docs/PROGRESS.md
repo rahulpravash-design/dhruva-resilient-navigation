@@ -32,5 +32,24 @@ Shell setup (each new shell on this machine):
   (4) Engine state is a provisional `EngineState`; mapping to `NavState` waits for `nav_state.ts` (BLOCKERS B1).
   (5) Flags for ML/map/integrity/spoof are added in the phases that implement them.
 
-## P3-P10
+## P3 mount alignment
+- [x] `align/mount.py`: gravity (gyro-propagated, gyro-bias-corrected, accel-corrected only when quiet), yaw by least
+  squares against GNSS-derived accelerations, confidence, PCA ratio, RIGID/LOOSE, re-align on gravity change > 10 deg
+- [x] Engine: no accelerometer propagation until alignment is confident (constant-velocity model, mode DEGRADED in DR)
+- [x] Simulator: phone-move events (rotation seen by the gyro); fixtures now start with GNSS-available accel/turning
+- [x] Tests: 50 random mounts <= 2 deg tilt / <= 5 deg yaw (measured max ~1.3 / ~1.3 deg on 20-50 mounts, SYNTHETIC),
+  re-align after phone move, unobservable-yaw reporting, engine degraded while re-aligning, golden outputs for aligned runs
+- [ ] **Gate "within 10 % of perfect-mount run": NOT met literally.** Long synthetic drive, 16 s outage, 6 seeds:
+  aligned 2.75 m vs oracle 1.71 m mean endpoint error (ratio ~1.6, +~1 m; drift ~1.0 % vs ~0.6 %). Both are far inside the
+  PS bound (10 % / 100 m per km). On the 30 s fixtures the gap is larger (few metres) because the aligned filter is
+  confident only after ~6 s. Residual cause: 0.3-0.8 deg tilt error leaks 0.05-0.14 m/s^2 into horizontal accel.
+  The regression test bounds the absolute cost (+2 m); see BLOCKERS B3.
+- Findings worth remembering: (1) a high-pass filter's memory of earlier acceleration biased yaw by ~8 deg in turns -> replaced
+  by mean-removed sums over gated samples; (2) using the accelerometer in an unconverged frame corrupted the EKF bias/velocity
+  for the rest of the clip; (3) tilt estimation must not keep correcting with the accelerometer during a GNSS outage.
+  (4) Yaw is unobservable from constant-speed straight driving; the engine says so (DEGRADED) instead of guessing.
+  (5) Limitations: a phone rotated only about the vertical axis is not detected as a move; thresholds were tuned on the
+  simulator only and phone vibration will need retuning on real data.
+
+## P4-P10
 Not started. Web (P8) and Android (P9) also wait on `design/stitch/`.

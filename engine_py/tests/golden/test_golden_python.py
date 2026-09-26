@@ -5,6 +5,8 @@ import numpy as np
 import pandas as pd
 import pytest
 
+from dhruva.align import MountAligner
+from dhruva.config import load_config
 from dhruva.eval import load_fixture, run_fixture
 from dhruva.sim import FIXTURE_SCENARIOS
 
@@ -27,9 +29,11 @@ def _same(a, b):
                                equal_nan=True), c
 
 
+@pytest.mark.parametrize("tag", ["", ".aligned"])
 @pytest.mark.parametrize("name", list(FIXTURE_SCENARIOS))
-def test_python_engine_matches_golden(name):
-    df, _, aligner = load_fixture(name)
+def test_python_engine_matches_golden(name, tag):
+    df, _, oracle = load_fixture(name)
+    aligner = oracle if tag == "" else MountAligner(load_config())
     timeline, log = run_fixture(df, aligner)
-    _same(timeline, pd.read_csv(GOLDEN / f"{name}.timeline.csv"))
-    _same(log, pd.read_csv(GOLDEN / f"{name}.log.csv"))
+    _same(timeline, pd.read_csv(GOLDEN / f"{name}{tag}.timeline.csv"))
+    _same(log, pd.read_csv(GOLDEN / f"{name}{tag}.log.csv"))

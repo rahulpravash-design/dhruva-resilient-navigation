@@ -1,4 +1,5 @@
 """Guards for the offline demo (web/): data is labelled SIMULATED, is self-consistent, and makes no banned claims."""
+import hashlib
 import json
 import re
 from pathlib import Path
@@ -27,6 +28,16 @@ def test_outage_scenario_enters_and_leaves_dead_reckoning():
     s = next(x for x in _demo()["scenarios"] if x["id"] == "outage")
     modes = [s["modes"][m] for m in s["mode"]]
     assert modes[0] == "GNSS" and "DR" in modes and modes[-1] == "GNSS"
+
+
+def test_batch_data_traces_to_the_committed_run():
+    text = (ROOT / "web" / "data" / "batch.js").read_text(encoding="utf-8")
+    batch = json.loads(re.sub(r"^window\.DHRUVA_BATCH\s*=\s*|;\s*$", "", text.strip()))
+    cases = (ROOT / "runs" / batch["run_id"] / "cases.jsonl").read_bytes()
+    assert batch["label"] == "SYNTHETIC"
+    assert hashlib.sha256(cases).hexdigest() == batch["cases_sha256"]
+    assert len(cases.splitlines()) == batch["cases"]
+    assert batch["names"].keys() == set(batch["ablations"])
 
 
 def test_web_and_readme_have_no_banned_claims_or_external_urls():

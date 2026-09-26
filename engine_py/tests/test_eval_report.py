@@ -1,7 +1,7 @@
 """RESULTS.md rendering: deterministic, labelled SYNTHETIC, unmeasured sections say NOT MEASURED."""
 from dhruva.eval.report import NM, render
 
-EV = {"windows_per_trajectory": 1, "attack": {"start_range_s": [40.0, 70.0], "step_m": 500.0, "ramp_mps": 2.0}}
+EV = {"id": "eval", "_config": "configs/eval.yaml", "windows_per_trajectory": 1, "attack": {"start_range_s": [40.0, 70.0], "step_m": 500.0, "ramp_mps": 2.0}}
 SUMMARY = {"label": "SYNTHETIC", "grade": "PHONE", "split": "test", "trajectories": 1, "cases": 3,
            "cases_sha256": "a" * 64, "eval_yaml_sha256": "b" * 64, "engine_json_sha256": "c" * 64}
 

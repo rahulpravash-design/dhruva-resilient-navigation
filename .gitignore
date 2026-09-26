@@ -1,6 +1,7 @@
 # data & outputs
 data/raw/
-runs/
+runs/*
+!runs/eval_quick/
 # python
 __pycache__/
 *.pyc

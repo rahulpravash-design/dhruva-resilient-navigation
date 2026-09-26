@@ -122,6 +122,14 @@ small{color:var(--mut)}
     <small>Numbers computed by the engine code on ONE simulated drive (n = 1). They show engine behaviour in a simulator with an assumed sensor model. They are not evidence of real-world accuracy.</small>
     <table id="mTable"></table>
   </div>
+  <div class="panel" style="margin-top:12px"><h2 id="bTitle">-</h2>
+    <small id="bNote"></small>
+    <div class="row" id="bBtns"></div>
+    <table id="bTable"></table>
+    <h2 style="margin-top:14px">Spoof scenarios (SIMULATED)</h2>
+    <table id="bAttack"></table>
+    <small id="bProv"></small>
+  </div>
   <div class="grid two" style="margin-top:12px">
     <div class="panel"><h2>NOT MEASURED</h2><table id="nmTable"></table></div>
     <div class="panel"><h2>Status</h2>
@@ -135,6 +143,7 @@ small{color:var(--mut)}
 </main>
 
 <script src="data/demo.js"></script>
+<script src="data/batch.js"></script>
 <script>
 "use strict";
 const $ = s => document.querySelector(s), $$ = s => Array.from(document.querySelectorAll(s));
@@ -303,8 +312,38 @@ $("#nmTable").innerHTML = [
   ["Accuracy or drift on real phone drives", NM], ["Any real or public dataset (data/raw/ is empty)", NM],
   ["Vehicle-grade sensor results", NM], ["Map-matched accuracy (matcher exists, not wired into the engine)", NM],
   ["On-device latency and battery (no Android app yet)", NM],
-  ["Statistics over many drives (harness exists, full matrix not run for this demo)", NM],
+  ["The full 40-drive evaluation (only a 12-drive SIMULATED run exists, shown above)", NM],
   ["Spoof detection rate and false alarms on real data", NM]].map(r => "<tr><td>" + r[0] + "</td><td class='nm'>" + r[1] + "</td></tr>").join("");
+
+const B = window.DHRUVA_BATCH;
+const pair = s => (s == null || s.median == null ? "— n/a" : s.median.toFixed(1) + " / " + (s.p90 == null ? "—" : s.p90.toFixed(1)));
+function tbl(el, head, rows) {
+  $(el).innerHTML = "<tr>" + head.map(h => "<th>" + h + "</th>").join("") + "</tr>" +
+    rows.map(r => "<tr>" + r.map(c => "<td class='n'>" + c + "</td>").join("") + "</tr>").join("");
+}
+function renderBatch(length) {
+  if (!B) {
+    $("#bTitle").textContent = "Ablation over many drives: " + NM;
+    $("#bNote").textContent = "No batch evaluation has been loaded. Run python -m dhruva.eval, then scripts/make_batch.py.";
+    return;
+  }
+  $("#bTitle").textContent = "Ablation over " + B.drives + " " + B.label + " drives (" + B.cases + " engine runs, " + B.grade + "-grade, " + B.split + " split)";
+  $("#bNote").textContent = "Each row adds one component to the row above. Median / 90th percentile over outage windows. These are simulator results, not field results.";
+  const lens = Object.keys(B.outage);
+  length = length || lens[Math.min(1, lens.length - 1)];
+  $("#bBtns").innerHTML = lens.map(l => "<button class='btn2' data-len='" + l + "' aria-pressed='" + (l === length) + "'>" + l + " s outage</button>").join("");
+  $$("#bBtns [data-len]").forEach(b => b.addEventListener("click", () => renderBatch(b.dataset.len)));
+  tbl("#bTable", ["Configuration", "n", "Endpoint error m", "Drift %", "Error per km m", "95 % coverage %", "PS pass", "Re-entry jump m"],
+    B.ablations.map(a => { const r = B.outage[length][a]; return [B.names[a], r.n, pair(r.endpoint_err_m), pair(r.drift_pct), pair(r.err_per_km_m),
+      r.coverage_median == null ? "— n/a" : r.coverage_median.toFixed(0), r.ps_pass + "/" + r.n, pair(r.reentry_jump_m)]; }).concat([["+ map matching", NM, "", "", "", "", "", ""]]));
+  const rows = [];
+  ["step", "ramp"].forEach(k => B.ablations.forEach(a => { const r = B.attack[k][a]; rows.push([k === "step" ? "500 m step" : "2 m/s drift", B.names[a], r.n,
+    a === "integrity" ? r.detected + "/" + r.n : "— no monitor", a === "integrity" ? pair(r.time_to_detect_s) : "—", pair(r.max_err_after_m)]); }));
+  tbl("#bAttack", ["Attack", "Configuration", "n", "Detected", "Time to detect s", "Max error after spoof start m"], rows);
+  $("#bProv").textContent = "False spoof alarms on clean data (full pipeline): " + B.false_alarms.count + " in " + B.false_alarms.clean_hours.toFixed(2) + " h = " +
+    (B.false_alarms.count / B.false_alarms.clean_hours).toFixed(1) + " per hour, NOT zero. Source: runs/" + B.run_id +
+    "/cases.jsonl, SHA-256 " + B.cases_sha256.slice(0, 16) + "…, eval config SHA-256 " + String(B.eval_yaml_sha256).slice(0, 16) + "…";
+}
 
 function tab(name) {
   st.tab = name;
@@ -327,6 +366,7 @@ function loop(ts) {
 if (!D) { $("#err").hidden = false; }
 else {
   $("#prov").innerHTML = "<small>Source: scripts/make_demo.py, seed " + D.seed + " (" + D.split + " split, first drive, not chosen by result), " + D.grade + "-grade sensor model. engine.json SHA-256 " + D.engine_json_sha256.slice(0, 16) + "…</small>";
+  renderBatch();
   $$("nav button").forEach(b => b.addEventListener("click", () => tab(b.dataset.tab)));
   $$("[data-sid]").forEach(b => b.addEventListener("click", () => setScenario(b.dataset.sid)));
   $$("[data-spd]").forEach(b => b.addEventListener("click", () => { st.speed = +b.dataset.spd; $$("[data-spd]").forEach(x => x.setAttribute("aria-pressed", x === b)); render(); }));

@@ -43,3 +43,9 @@
 - Ramp spoof (2 m/s drift) is detected late (time-to-detect about 14.9 s on val); a slow spoofer that starts during an outage is
   indistinguishable from a normal re-lock.
 - DR-failure tail from B4 remains (max errors up to about 600-1000 m on some drives).
+
+## B7: false spoof alarms on clean simulated data (open)
+- Symptom: 12-drive SYNTHETIC evaluation (`docs/RESULTS_QUICK.md`, test split): 6 spoof rejections in 3.28 h of clean data = 1.8 per hour with the full pipeline. The P5 target was zero false alarms on clean drives (validated on the val split only).
+- Not tuned: the test split is never used for tuning. Any fix must be developed on the train/val splits and then re-run once on test.
+- Also seen: the physics-only EKF (no NHC) is worse than the gyro baseline on 60 s and 120 s outages (252 m vs 204 m and 1029 m vs 405 m median endpoint error); it only becomes good once NHC is added. The integrity monitor does not improve outage accuracy (60 s median 8.8 m vs 8.7 m with SpeedNet alone); its benefit is the re-entry jump and spoof handling.
+- 95 % coverage reads 100 % in the median for the full pipeline, so the filter is on the conservative side there (target about 95 %).

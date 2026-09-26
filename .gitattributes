@@ -1,0 +1,2 @@
+# Evaluation outputs are hashed (SHA-256 in docs/RESULTS_QUICK.md and web/data/batch.js): store them byte for byte.
+runs/eval_quick/* -text

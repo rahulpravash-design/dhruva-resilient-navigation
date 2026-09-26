@@ -144,6 +144,7 @@ def eval_config(path):
     text = path.read_text(encoding="utf-8")
     ev = yaml.safe_load(text)
     ev["_sha256"] = hashlib.sha256(text.encode()).hexdigest()
+    ev["_config"] = f"configs/{path.name}"
     return ev
 
 

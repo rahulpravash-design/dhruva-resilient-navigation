@@ -9,8 +9,11 @@ Read this before quoting any DHRUVA number.
 - SpeedNet (47,394 parameters) was trained on SYNTHETIC drives with an ASSUMED speed-dependent vibration model
   (`docs/SPEEDNET_ASSUMPTIONS.md`). It may not transfer to real phones and vehicles.
 - The web demo shows ONE drive (seed 4000, first `test`-split drive, not chosen by result). It is a demonstration, not a statistic.
-- The full evaluation matrix (`python -m dhruva.eval`) is implemented but a full run is not part of the committed results
-  unless `docs/RESULTS.md` exists and says otherwise.
+- The evaluation matrix (`python -m dhruva.eval`) has been run only in a reduced form: 12 SYNTHETIC drives, 470 engine runs
+  (`configs/eval_quick.yaml`, report `docs/RESULTS_QUICK.md`, data `runs/eval_quick/`). The full 40-drive run
+  (`configs/eval.yaml`) has NOT been run, so there is no `docs/RESULTS.md`.
+- In that run the full pipeline raised 6 false spoof alarms in 3.28 h of clean data (1.8 per hour), the physics-only EKF was
+  worse than the gyro baseline on long outages, and the integrity monitor did not improve outage accuracy (`docs/BLOCKERS.md` B7).
 - Phone-grade and vehicle-grade results are never mixed. No vehicle-grade result exists.
 - No map-matched number exists: the matcher and router are unit-tested on synthetic graphs and are not wired into the engine.
 

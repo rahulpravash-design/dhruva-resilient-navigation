@@ -47,7 +47,9 @@ The demo drive is the first drive of the held-out `test` split (seed 4000), not 
 
 **Simulated:** every trajectory and sensor stream. The simulator uses an assumed phone IMU/GNSS model, and SpeedNet was trained on synthetic drives with an assumed vibration model (`docs/SPEEDNET_ASSUMPTIONS.md`).
 
-**Pending validation / NOT MEASURED:** any real phone drive or public dataset (`data/raw/` is empty), vehicle-grade sensors, map-matched accuracy, on-device latency and battery, statistics over many drives (the harness exists; the full matrix has not been run), real-world spoof detection rate and false alarms. **Planned, not built:** Android app, Kotlin engine.
+**Simulated multi-drive results:** a reduced evaluation over 12 synthetic drives (470 engine runs, `docs/RESULTS_QUICK.md`, shown as the ablation table on the Technical Metrics screen). Example, 60 s outage, median endpoint error: gyro baseline 204.5 m, EKF without constraints 252.3 m, with NHC 14.1 m, with SpeedNet 8.7 m, full pipeline 8.8 m. The full pipeline also raised 6 false spoof alarms in 3.28 h of clean simulated data (1.8 per hour). These are simulator results.
+
+**Pending validation / NOT MEASURED:** any real phone drive or public dataset (`data/raw/` is empty), vehicle-grade sensors, map-matched accuracy, on-device latency and battery, the full 40-drive evaluation (only the 12-drive run above exists), real-world spoof detection rate and false alarms. **Planned, not built:** Android app, Kotlin engine.
 
 Known engine limits are in `docs/BLOCKERS.md` (for example a re-entry step above target on some drives, slow ramp spoofs taking about 15 to 19 s to reject, and a heavy tail of large errors on some outages).
 

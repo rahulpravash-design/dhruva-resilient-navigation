@@ -1,0 +1,10 @@
+{
+  "cases": 470,
+  "cases_sha256": "3d0af6ba2a7564e4131eccf7a8cfdb806c3e46c135cbddb4f78a8b96a7dab8c5",
+  "engine_json_sha256": "827ccfe6eaf87bc68e45cb493d03fadd5d8784585aaf97111e5645a1bbf21448",
+  "eval_yaml_sha256": "07577ac57cb7f1db34a138d3f3ba954c8180da98d21635cf87e9a539130e395f",
+  "grade": "PHONE",
+  "label": "SYNTHETIC",
+  "split": "test",
+  "trajectories": 12
+}

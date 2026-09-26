@@ -1,0 +1,22 @@
+# Reduced evaluation matrix: same definitions as configs/eval.yaml, fewer drives. Every number in the report is SYNTHETIC.
+# Run: PYTHONPATH=engine_py python -m dhruva.eval --config configs/eval_quick.yaml --results docs/RESULTS_QUICK.md
+id: eval_quick
+label: SYNTHETIC
+grade: PHONE
+split: test                     # trajectory-level split from data/splits.yaml, never tuned on
+trajectories: 12                # first 12 drives of the split (the full config uses 40)
+drive: {duration_s: 185.0, outage_start_min_s: 35.0, tail_s: 15.0}
+outage_s: [30, 60, 120]
+windows_per_trajectory: 2
+ablations: [baseline, physics, nhc, ml, integrity]
+attack:
+  step_m: 500.0
+  ramp_mps: 2.0
+  duration_s: 120.0
+  start_range_s: [40.0, 70.0]
+map: not_measured
+seed_offset: 7
+jobs: 3
+sample:
+  dir: null
+  trajectories: 0

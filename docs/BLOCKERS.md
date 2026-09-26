@@ -32,3 +32,14 @@
 - Symptom: some drives end with 3-6 deg tilt and 5-11 deg yaw error while `confident` is True; those give the remaining
   worst outage errors (val seeds 2015, 2019, 2025).
 - Idea: turn the LS coherence / residual into a quality number that inflates accel noise, and refine tilt with GNSS-aided velocity.
+
+## B6: re-entry display steps above 2 m on some drives; slow-ramp detection latency (open, non-blocking)
+- Val seed 2005 (60 s outage, integrity on): displayed position moved 2.7-5 m per 0.1 s (state speed 19.6 m/s, expected 2 m) for about
+  1.5 s while the mode was still DR/REACQUIRE, i.e. BEFORE the GNSS re-lock at 122.0 s. Error against truth fell 34 m -> 9 m over the same
+  interval, so this is a genuine filter correction, not a bug in the display path: after 60 s of dead reckoning the position/heading
+  cross-covariance is large and the NHC update during a turn shrinks heading error, dragging position with it. The 2 s display blend only
+  covers GNSS re-entry, so this correction shows up as motion. Worst-case jump on val drives: 3.2-3.7 m vs target <= 2 m.
+  Possible fix (not done): blend any large DR-time correction, or limit the position correction per tick.
+- Ramp spoof (2 m/s drift) is detected late (time-to-detect about 14.9 s on val); a slow spoofer that starts during an outage is
+  indistinguishable from a normal re-lock.
+- DR-failure tail from B4 remains (max errors up to about 600-1000 m on some drives).

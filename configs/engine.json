@@ -94,7 +94,14 @@
     "reacquire_course_tol_deg": 15.0,
     "reacquire_pos_sigma_mult": 3.0,
     "reacquire_pos_slack_m": 5.0,
-    "display_blend_s": 2.0
+    "display_blend_s": 2.0,
+    "cusum_k": 1.0,
+    "cusum_h": 15.0,
+    "reacquire_force_accept_fixes": 10,
+    "_tuning_note": "cusum_k/cusum_h/force-accept are initial values; tune on the val split (0 false alarms on clean drives).",
+    "spoof_hard_nis": 20.0,
+    "post_lock_grace_s": 10.0,
+    "suspect_escalate_s": 5.0
   },
   "mapmatch": {
     "candidate_radius_min_m": 50.0,

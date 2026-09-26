@@ -22,11 +22,14 @@ class BaselineEngine(EngineBase):
         if self.v > self.cfg["ekf"]["gnss_vel_speed_min_mps"] and np.isfinite(fix.get("bearing", np.nan)):
             self.psi = float(heading_deg_to_psi(fix["bearing"]))
 
+    def _pos_enu(self):
+        return self.p[0], self.p[1]
+
     def _tick_updates(self, t):
         pass
 
     def _snapshot(self, t):
-        lat, lon = self._pos_latlon(self.p[0], self.p[1])
+        lat, lon = self._pos_latlon(self.p[0], self.p[1], t)
         return {"t": float(t), "lat": lat, "lon": lon, "speed": self.v, "psi": self.psi,
                 "cov95_m": float("nan"), "mode": self._mode(t), "gyro_bias": float("nan"),
-                "nhc_active": False, "zupt_active": False}
+                "nhc_active": False, "zupt_active": False, "gnss_trust": self._trust(t)}

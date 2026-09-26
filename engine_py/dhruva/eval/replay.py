@@ -23,18 +23,25 @@ def load_fixture(name, fixture_dir=None):
 
 def run_fixture(df, aligner, engine_cls=Engine, flags=None, config=None, speed_estimator=None):
     """Feed every row to the engine. Returns (timeline_df, log_df)."""
+    eng = replay(df, aligner, engine_cls, flags, config, speed_estimator)
+    return eng.timeline_df(), eng.log_df()
+
+
+def replay(df, aligner, engine_cls=Engine, flags=None, config=None, speed_estimator=None):
+    """Feed every row to the engine and return the engine (timeline_df, log_df, events_df available)."""
     eng = engine_cls(config or load_config(), flags or EngineFlags(), aligner, speed_estimator)
     t = df["t"].to_numpy()
     acc = df[["ax", "ay", "az"]].to_numpy()
     gyr = df[["gx", "gy", "gz"]].to_numpy()
     new = df["gnss_new"].to_numpy()
     fix_cols = {k: df[c].to_numpy() for k, c in (("lat", "gnss_lat"), ("lon", "gnss_lon"), ("acc", "gnss_acc"),
-                                                  ("speed", "gnss_speed"), ("bearing", "gnss_bearing"))}
+                                                  ("speed", "gnss_speed"), ("bearing", "gnss_bearing"),
+                                                  ("sats", "sats_used"))}
     for i in range(len(df)):
         eng.on_imu(t[i], acc[i], gyr[i])
         if new[i]:
             eng.on_gnss(t[i], {k: float(v[i]) for k, v in fix_cols.items()})
-    return eng.timeline_df(), eng.log_df()
+    return eng
 
 
 def score_outage(df, timeline, t0, t1):

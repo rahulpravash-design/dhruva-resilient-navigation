@@ -7,6 +7,8 @@ from .filter import PlanarEkf
 
 
 class Engine(EngineBase):
+    supports_integrity = True
+
     def _init(self, t, fix):
         k = self.cfg["ekf"]
         ini = k["init"]
@@ -29,6 +31,17 @@ class Engine(EngineBase):
 
     def _propagate(self, f, wz, dt):
         self.ekf.predict(f, wz, dt)
+
+    def _pos_enu(self):
+        return self.ekf.x[0], self.ekf.x[1]
+
+    def _predict_fix(self, fix, e, n):
+        """Position innovation of a fix against the current filter, without applying it."""
+        sigma = max(fix["acc"], self.cfg["ekf"]["gnss_pos_sigma_floor_m"])
+        y = np.array([e, n]) - self.ekf.x[0:2]
+        S = self.ekf.P[0:2, 0:2] + np.eye(2) * sigma ** 2
+        return {"nis": float(y @ np.linalg.solve(S, y)), "cov95_m": self.ekf.cov95_m(),
+                "speed": float(np.hypot(self.ekf.x[2], self.ekf.x[3])), "psi": float(self.ekf.x[4])}
 
     def _update(self, t, kind, z, hx, H, R):
         nis = self.ekf.update(z, hx, H, R)
@@ -87,7 +100,8 @@ class Engine(EngineBase):
 
     def _snapshot(self, t):
         x = self.ekf.x
-        lat, lon = self._pos_latlon(x[0], x[1])
+        lat, lon = self._pos_latlon(x[0], x[1], t)
         return {"t": float(t), "lat": lat, "lon": lon, "speed": float(np.hypot(x[2], x[3])),
                 "psi": float(x[4]), "cov95_m": self.ekf.cov95_m(), "mode": self._mode(t),
-                "gyro_bias": float(x[5]), "nhc_active": self._nhc, "zupt_active": self._zupt}
+                "gyro_bias": float(x[5]), "nhc_active": self._nhc, "zupt_active": self._zupt,
+                "gnss_trust": self._trust(t)}

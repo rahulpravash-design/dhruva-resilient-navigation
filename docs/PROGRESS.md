@@ -77,5 +77,21 @@ Shell setup (each new shell on this machine):
   aggregate gate on random validation drives.
 - Notes: `tf.lite.Interpreter` is deprecated in TF 2.20+ (Android will use LiteRT anyway); live app must resample IMU to 100 Hz.
 
-## P5-P10
+## P5 integrity + map matching + routing (SYNTHETIC)
+- [x] `integrity/monitor.py`: LOCK / DR / REACQUIRE / SPOOF_REJECTED. NIS chi2 9.21 on 2 consecutive fixes (cov95 < 15 m), plus a hard
+  NIS >= 20 (`spoof_hard_nis`) for a clear spoof; borderline misfits go to REACQUIRE with origin SUSPECT (never force-accepted,
+  escalates to SPOOF_REJECTED after 5 s); CUSUM (k=1, h=15); re-entry needs 3 mutually consistent fixes that agree with the filter
+  speed/course and covariance gate; a plain outage (origin DR) may re-lock on 10 GNSS-self-consistent fixes so an over-tight
+  covariance cannot deadlock; 10 s grace after re-lock; `gnss_trust` 0-1 in the timeline.
+- [x] Engine: fixes withheld unless the monitor says APPLY; 2 s display blend eases the correction in at re-entry.
+- [x] `mapmatch/` (HMM/Viterbi, 5 s lag, radius max(50 m, 3 sigma)), `route/` (A*, deviation > 30 m for > 3 s or off-route edge -> reroute,
+  timed). Tested on SYNTHETIC grid/fork graphs only. `scripts/build_map.py` (osmnx) is written but NOT RUN.
+- [x] Tests: `test_integrity_monitor.py` (18), `test_integrity_engine.py` (8), `test_map_route.py` (13). Goldens regenerated (`gnss_trust` column).
+- [ ] Not implemented (cut list): map-snap pseudo-measurement into the EKF; `use_map`/`road_graph` wiring into `Engine`.
+- Known limits (see BLOCKERS.md B6): a slow spoofer that starts during an outage, and a spoof whose Doppler velocity is not shifted
+  alongside position, are not distinguishable from an outage re-lock / consistent fixes respectively; the ramp injector leaves the
+  Doppler velocity unchanged.
+- Open: worst-case displayed re-entry step is above the 2 m target on some val drives (B6).
+
+## P6-P10
 Not started. Web (P8) and Android (P9) also wait on `design/stitch/`.

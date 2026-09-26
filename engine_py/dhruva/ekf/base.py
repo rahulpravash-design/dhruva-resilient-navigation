@@ -1,15 +1,18 @@
-"""Shared engine plumbing: timing, ticks, forced outages, stationary detection, timeline."""
+"""Shared engine plumbing: timing, ticks, forced outages, spoof injection, integrity gate, stationary detection."""
 from collections import deque
 from dataclasses import dataclass
 
 import numpy as np
 import pandas as pd
 
-from ..geo import to_enu, to_latlon
+from ..geo import heading_deg_to_psi, offset_latlon, to_enu, to_latlon
+from ..integrity import APPLY, FixInfo, IntegrityMonitor, Prediction
 from ..speednet.features import WindowBuffer, feature_row
 
-TIMELINE_COLUMNS = ("t", "lat", "lon", "speed", "psi", "cov95_m", "mode", "gyro_bias", "nhc_active", "zupt_active")
+TIMELINE_COLUMNS = ("t", "lat", "lon", "speed", "psi", "cov95_m", "mode", "gyro_bias", "nhc_active", "zupt_active",
+                    "gnss_trust")
 MODE_SLACK_S = 0.05  # scheduling slack so a fix arriving exactly 1.0 s after the last one is not a gap
+HISTORY_S = 20.0
 
 
 @dataclass(frozen=True)
@@ -17,7 +20,9 @@ class EngineFlags:
     use_nhc: bool = True
     use_zupt: bool = True                 # ZUPT + ZARU
     use_ml: bool = False                  # SpeedNet speed pseudo-measurement (needs a speed_estimator)
+    use_integrity: bool = False           # GNSS trust guard (spoof rejection, safe re-entry, 2 s display blend)
     force_outage: tuple = ()              # ((t_start, dur_s), ...) fixes dropped inside these windows
+    spoof: tuple = None                   # ("step", t_start, metres) or ("ramp", t_start, m/s): offsets fixes to the east
 
 
 @dataclass
@@ -32,9 +37,12 @@ class EngineState:
     gyro_bias: float
     nhc_active: bool
     zupt_active: bool
+    gnss_trust: float
 
 
 class EngineBase:
+    supports_integrity = False
+
     def __init__(self, config, flags=None, aligner=None, speed_estimator=None):
         self.cfg = config
         self.flags = flags or EngineFlags()
@@ -42,14 +50,19 @@ class EngineBase:
             raise ValueError("use_ml requires a speed_estimator")
         self.aligner = aligner
         self.speed_estimator = speed_estimator
+        self.monitor = IntegrityMonitor(config) if self.flags.use_integrity and self.supports_integrity else None
         self._feat = WindowBuffer(config["speednet"]["window_samples"])
         self.origin = None
         self.t = None
-        self._last_fix_t = -np.inf
+        self._last_fix_t = -np.inf          # any fix seen (used to veto ZUPT)
         self._last_fix_speed = 0.0
+        self._last_applied_t = -np.inf      # last fix that drove the filter (used for mode)
         self._tick_dt = 1.0 / config["ekf"]["tick_hz"]
         self._next_tick = None
         self._win = deque()
+        self._hist = deque()                # (t, E, N) of the filter position, for consistency checks
+        self._blend_off = np.zeros(2)
+        self._blend_t0 = -np.inf
         self._timeline = []
         self._log = []
         self._nhc = False
@@ -79,31 +92,81 @@ class EngineBase:
     def on_gnss(self, t, fix):
         if any(t0 <= t < t0 + d for t0, d in self.flags.force_outage):
             return
+        fix = self._spoofed(t, fix)
         if np.isfinite(fix.get("speed", np.nan)):
             self.aligner.on_gnss(t, fix["speed"])
         if self.origin is None:
             self.origin = (fix["lat"], fix["lon"])
             self.t = t
             self._init(t, fix)
-            self._last_fix_t = t
+            self._last_fix_t = self._last_applied_t = t
             self._last_fix_speed = float(fix.get("speed", 0.0))
+            if self.monitor:
+                self.monitor.on_seen(t)
             self._record(t)
             self._next_tick = t + self._tick_dt
             return
         e, n = to_enu(fix["lat"], fix["lon"], *self.origin)
-        self._on_fix(t, fix, float(e), float(n))
-        self._last_fix_t = t
-        self._last_fix_speed = float(fix.get("speed", 0.0))
+        e, n = float(e), float(n)
+        self._last_fix_t, self._last_fix_speed = t, float(fix.get("speed", 0.0))
+        shown_before = None
+        if self.monitor:
+            if not self._integrity_accepts(t, fix, e, n):
+                return
+            if self.monitor.reentered:      # remember what was on screen, so the correction can be eased in
+                shown_before = np.array(self._pos_enu()) + self._blend_off * self._blend_factor(t)
+        self._on_fix(t, fix, e, n)
+        self._last_applied_t = t
+        if self.monitor:
+            self.monitor.on_seen(t)
+        if shown_before is not None:
+            self._blend_off = shown_before - np.array(self._pos_enu())
+            self._blend_t0 = t
 
     def state(self):
-        row = self._snapshot(self.t)
-        return EngineState(**row)
+        return EngineState(**self._snapshot(self.t))
 
     def timeline_df(self):
         return pd.DataFrame(self._timeline, columns=TIMELINE_COLUMNS)
 
     def log_df(self):
         return pd.DataFrame(self._log, columns=("t", "kind", "nis", "dof"))
+
+    def events_df(self):
+        ev = self.monitor.events if self.monitor else []
+        return pd.DataFrame(ev, columns=("t", "kind", "detail"))
+
+    # ---- integrity ------------------------------------------------------------
+    def _spoofed(self, t, fix):
+        sp = self.flags.spoof
+        if not sp or t < sp[1]:
+            return fix
+        dist = sp[2] if sp[0] == "step" else sp[2] * (t - sp[1])
+        lat, lon = offset_latlon(fix["lat"], fix["lon"], dist, 90.0)
+        return {**fix, "lat": float(lat), "lon": float(lon)}
+
+    def _disp_fn(self):
+        h = self._hist
+        if len(h) < 2:
+            return None
+        ts = np.array([r[0] for r in h])
+        es = np.array([r[1] for r in h])
+        ns = np.array([r[2] for r in h])
+        return lambda a, b: (float(np.interp(b, ts, es) - np.interp(a, ts, es)),
+                             float(np.interp(b, ts, ns) - np.interp(a, ts, ns)))
+
+    def _integrity_accepts(self, t, fix, e, n):
+        pred = self._predict_fix(fix, e, n)
+        bearing = fix.get("bearing", np.nan)
+        info = FixInfo(t, e, n, float(fix["acc"]), float(fix.get("sats", 12.0)), float(fix.get("speed", 0.0)),
+                       float(heading_deg_to_psi(bearing)) if np.isfinite(bearing) else float("nan"))
+        decision = self.monitor.on_fix(info, Prediction(pred["nis"], pred["cov95_m"], pred["speed"], pred["psi"],
+                                                        self._disp_fn()))
+        return decision == APPLY
+
+    def _blend_factor(self, t):
+        """1 at re-entry, easing to 0 over `display_blend_s`: the displayed position never jumps."""
+        return max(0.0, 1.0 - (t - self._blend_t0) / self.cfg["integrity"]["display_blend_s"])
 
     # ---- helpers ------------------------------------------------------------
     def _push_window(self, t, acc, gyr, wz):
@@ -133,14 +196,24 @@ class EngineBase:
         return float(np.max(np.linalg.norm(acc - acc.mean(axis=0), axis=1))) < qs["accel_vec_dev_max_mps2"]
 
     def _mode(self, t):
-        timeout = self.cfg["integrity"]["no_fix_timeout_s"] + MODE_SLACK_S
-        gnss = t - self._last_fix_t <= timeout
-        if self.aligner.realigning or (not gnss and not self.aligner.confident):
+        if self.monitor:
+            base = self.monitor.mode
+            gnss = base == "GNSS"
+        else:
+            gnss = t - self._last_applied_t <= self.cfg["integrity"]["no_fix_timeout_s"] + MODE_SLACK_S
+            base = "GNSS" if gnss else "DR"
+        if self.aligner.realigning or (base == "DR" and not self.aligner.confident):
             return "DEGRADED"
-        return "GNSS" if gnss else "DR"
+        return base
 
-    def _pos_latlon(self, e, n):
-        lat, lon = to_latlon(e, n, *self.origin)
+    def _trust(self, t):
+        if self.monitor:
+            return self.monitor.trust
+        return 1.0 if self._mode(t) == "GNSS" else 0.0
+
+    def _pos_latlon(self, e, n, t):
+        off = self._blend_off * self._blend_factor(t)
+        lat, lon = to_latlon(e + off[0], n + off[1], *self.origin)
         return float(lat), float(lon)
 
     def _record(self, t):
@@ -152,7 +225,13 @@ class EngineBase:
 
     def _tick(self, t):
         self._nhc = self._zupt = False
+        if self.monitor:
+            self.monitor.on_tick(t)
         self._tick_updates(t)
+        e, n = self._pos_enu()
+        self._hist.append((t, float(e), float(n)))
+        while t - self._hist[0][0] > HISTORY_S:
+            self._hist.popleft()
         self._record(t)
 
     # ---- hooks --------------------------------------------------------------
@@ -163,6 +242,12 @@ class EngineBase:
         raise NotImplementedError
 
     def _on_fix(self, t, fix, e, n):
+        raise NotImplementedError
+
+    def _predict_fix(self, fix, e, n):
+        raise NotImplementedError
+
+    def _pos_enu(self):
         raise NotImplementedError
 
     def _tick_updates(self, t):

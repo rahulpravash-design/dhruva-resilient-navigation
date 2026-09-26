@@ -18,10 +18,17 @@
 - Hypothesis: a tilt/leak state in the EKF or GNSS-aided tilt refinement would close the gap; SpeedNet (P4) also bounds the
   forward-speed error that the leak causes. Deferred rather than over-tuned on the simulator.
 
-## B4: engine uncertainty is overconfident and has heavy-tailed failures on random drives (open)
-- Symptom (P4 held-out eval, SYNTHETIC): median 95 %-circle coverage during outages 0-12 % (target ~95 %); p90 endpoint error
-  250-400 m without SpeedNet, 66-328 m with it. Fixture-like drives behave far better (1-8 m), so random dynamics
-  (stops, hard turns, speed changes, wrong-but-confident alignment) expose weaknesses.
-- Not yet tried: inflating process noise for the accel/heading leak terms; a covariance floor tied to alignment confidence;
-  inspecting the worst seeds (stops, alignment yaw error at confident=True, ZUPT thresholds).
-- Plan: diagnose the worst seeds and calibrate covariance as part of P5/P6 (integrity + eval), since coverage is a headline metric.
+## B4: engine uncertainty overconfident / heavy-tailed failures on random drives (largely resolved)
+- Symptom (first P4 eval, SYNTHETIC): median 95 %-circle coverage 0-12 %, p90 endpoint error 250-400 m.
+- Root cause found by tracing the worst seeds: EKF accel process noise (0.01) and accel-bias random walk (5e-4) were far too small
+  for the constant 0.3-0.6 m/s^2 horizontal offset a 2-3 deg tilt error leaks in. The filter trusted its own velocity, ignored
+  GNSS velocity innovations (NIS ~200), and drifted 3-5 m/s off while cov95 read 3 m. A ZUPT deadlock was suspected first
+  and ruled out (identical output after the fix); the stricter stationary detector (steady accel vector + GNSS veto) was kept.
+- Fix: retuned on the validation split only (accel noise 0.15, bias RW 5e-3). Test split: p90 endpoint error 36 m (30 s) / 65 m (60 s)
+  without SpeedNet; median coverage 94-100 % without SpeedNet.
+- Remaining: tails (see B5) and SpeedNet-on coverage 69 % at 60 s.
+
+## B5: alignment quality is not represented in the filter (open)
+- Symptom: some drives end with 3-6 deg tilt and 5-11 deg yaw error while `confident` is True; those give the remaining
+  worst outage errors (val seeds 2015, 2019, 2025).
+- Idea: turn the LS coherence / residual into a quality number that inflates accel noise, and refine tilt with GNSS-aided velocity.

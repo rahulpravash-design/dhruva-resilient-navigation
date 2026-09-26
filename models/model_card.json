@@ -62,7 +62,8 @@
   "heldout_engine_eval": {
     "file": "models/speednet_eval.json",
     "label": "SYNTHETIC",
-    "summary": "median endpoint error 34.7->14.1 m (30 s outages) and 61.2->28.6 m (60 s) with SpeedNet on the synthetic test split"
+    "split": "test (seeds 4000-4039)",
+    "summary": "median endpoint error 9.9->5.1 m (30 s outages) and 19.4->10.8 m (60 s) with SpeedNet; SpeedNet-on 95%-circle coverage 68.6% at 60 s (overconfident)"
   },
   "uncertainty_calibration_val": {
     "coverage_1sigma": 0.6435600500190289,

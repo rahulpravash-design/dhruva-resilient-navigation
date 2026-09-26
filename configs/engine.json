@@ -5,7 +5,8 @@
     "quasi_static": {
       "gyro_norm_max_radps": 0.05,
       "accel_norm_dev_max_mps2": 0.3,
-      "window_s": 1.0
+      "window_s": 1.0,
+      "accel_vec_dev_max_mps2": 0.3
     },
     "straight": {
       "gyro_z_max_radps": 0.03,
@@ -46,11 +47,11 @@
     "speednet_var_floor": 0.05,
     "map_snap_sigma_cross_m": 3.0,
     "map_snap_sigma_along_m": 30.0,
-    "_tuning_note": "Noise values below are initial, matched to the simulator's IMU model. Re-tune on the train split only when real data exists.",
-    "accel_noise_mps2_rthz": 0.01,
+    "_tuning_note": "Noise values are initial, tuned on the simulator's VALIDATION drives only (accel noise 0.01->0.15 and bias RW 5e-4->5e-3 fixed a large overconfidence). Re-tune on real train/val data.",
+    "accel_noise_mps2_rthz": 0.15,
     "gyro_noise_radps_rthz": 0.0006,
     "gyro_bias_rw_radps_rts": 2e-05,
-    "accel_bias_rw_mps2_rts": 0.0005,
+    "accel_bias_rw_mps2_rts": 0.005,
     "gnss_vel_along_sigma_mps": 0.15,
     "gnss_bearing_sigma_deg": 3.0,
     "zupt_sigma_mps": 0.05,
@@ -65,7 +66,9 @@
       "accel_bias_sigma_mps2": 0.1
     },
     "zupt_speed_max_mps": 1.0,
-    "no_accel_noise_mps2_rthz": 1.0
+    "no_accel_noise_mps2_rthz": 1.0,
+    "zupt_gnss_veto_speed_mps": 1.0,
+    "zupt_gnss_veto_age_s": 2.0
   },
   "speednet": {
     "window_s": 1.5,

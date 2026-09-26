@@ -56,18 +56,25 @@ Shell setup (each new shell on this machine):
 - [x] Float16 TFLite (111 KB) + `models/model_card.json`; Keras vs TFLite mean |d mu| < 0.05 m/s and < 5 ms/window (tests, test-full)
 - [x] EKF pseudo-measurement (`EngineFlags.use_ml`, default off so goldens are unchanged); fixtures annotated with `speednet_mu/logvar`
 - [x] Fixed trajectory splits in `data/splits.yaml` (train 150 / val 30 / test 40 synthetic drives)
-- [x] Gate: held-out drift reduced. Test split, MountAligner + EKF, injected outages (SYNTHETIC, assumed vibration model):
+- [x] Gate: held-out drift reduced. Untouched `test` split (40 synthetic drives, injected outages, MountAligner + retuned EKF,
+  TFLite model; SYNTHETIC with an assumed vibration model). Median / 90th percentile, n=20 per outage length:
   | outage | metric | without SpeedNet | with SpeedNet |
   |---|---|---|---|
-  | 30 s (n=20) | median endpoint error | 34.7 m | 14.1 m |
-  | 30 s | median drift / PS pass rate | 16.9 % / 35 % | 4.9 % / 65 % |
-  | 60 s (n=18) | median endpoint error | 61.2 m | 28.6 m |
-  | 60 s | median drift / PS pass rate | 7.0 % / 56 % | 6.9 % / 67 % |
+  | 30 s | endpoint error | 9.9 / 35.9 m | 5.1 / 9.3 m |
+  | 30 s | drift, PS pass rate | 2.6 % / 85 % | 1.4 % / 95 % |
+  | 60 s | endpoint error | 19.4 / 65.1 m | 10.8 / 33.7 m |
+  | 60 s | drift, PS pass rate | 3.3 % / 80 % | 2.2 % / 100 % |
+  | 60 s | median 95 %-circle coverage | 93.8 % | 68.6 % (SpeedNet's logvar is overconfident) |
 - **Caveat that matters:** the vibration SpeedNet exploits is an assumption built into the simulator
   (`docs/SPEEDNET_ASSUMPTIONS.md`). This shows the pipeline works, not that SpeedNet works on a real phone.
-- **Open problems found (BLOCKERS B4):** (a) the 95 % circle is badly overconfident on these drives (median coverage 0-12 %,
-  target ~95 %); (b) without SpeedNet the engine has heavy-tailed failures (p90 endpoint error 250-400 m) on random drives;
-  (c) SpeedNet's own 1-sigma coverage is 64 % (ideal 68 %), 2-sigma 91 % (ideal 95 %).
+- **EKF retune found while diagnosing (see BLOCKERS B4):** the first P4 eval (on what is now the `dev` split) showed median
+  endpoint error 34.7 m and coverage 0-12 %. Cause: accel process noise (0.01) and bias random walk (5e-4) were far too small
+  for the tilt leak in real-ish drives, so the filter ignored GNSS velocity. Retuned on the `val` split only
+  (accel noise 0.15, bias RW 5e-3). `dev` split = seeds inspected while debugging (contaminated); `test` = seeds 4000-4039, first
+  used for the table above. Any further tuning must use `val`; `test` numbers are now spent.
+- Test changes: the fixture gate is now "EKF beats baseline on tunnel_turns and stop_go, within 3 m on tunnel_straight"
+  (constant-speed straight road is where holding GNSS speed is near-ideal and both errors are GNSS-noise dominated), plus a slow
+  aggregate gate on random validation drives.
 - Notes: `tf.lite.Interpreter` is deprecated in TF 2.20+ (Android will use LiteRT anyway); live app must resample IMU to 100 Hz.
 
 ## P5-P10

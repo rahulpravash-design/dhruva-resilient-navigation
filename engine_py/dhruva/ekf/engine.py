@@ -58,7 +58,7 @@ class Engine(EngineBase):
         k = self.cfg["ekf"]
         x = self.ekf.x
         # Constant-velocity motion looks quasi-static to an IMU, so also require a low estimated speed.
-        if self._stationary() and np.hypot(x[2], x[3]) < k["zupt_speed_max_mps"]:
+        if self._stationary(t) and np.hypot(x[2], x[3]) < k["zupt_speed_max_mps"]:
             if self.flags.use_zupt:
                 Hz = np.zeros((2, 8))
                 Hz[0, 2] = Hz[1, 3] = 1.0

@@ -46,6 +46,7 @@ class EngineBase:
         self.origin = None
         self.t = None
         self._last_fix_t = -np.inf
+        self._last_fix_speed = 0.0
         self._tick_dt = 1.0 / config["ekf"]["tick_hz"]
         self._next_tick = None
         self._win = deque()
@@ -85,12 +86,14 @@ class EngineBase:
             self.t = t
             self._init(t, fix)
             self._last_fix_t = t
+            self._last_fix_speed = float(fix.get("speed", 0.0))
             self._record(t)
             self._next_tick = t + self._tick_dt
             return
         e, n = to_enu(fix["lat"], fix["lon"], *self.origin)
         self._on_fix(t, fix, float(e), float(n))
         self._last_fix_t = t
+        self._last_fix_speed = float(fix.get("speed", 0.0))
 
     def state(self):
         row = self._snapshot(self.t)
@@ -106,16 +109,28 @@ class EngineBase:
     def _push_window(self, t, acc, gyr, wz):
         g = self.cfg["gravity_mps2"]
         w = self.cfg["align"]["quasi_static"]["window_s"]
-        self._win.append((t, float(np.linalg.norm(gyr)), abs(float(np.linalg.norm(acc)) - g), wz))
+        self._win.append((t, float(np.linalg.norm(gyr)), abs(float(np.linalg.norm(acc)) - g), wz,
+                          np.asarray(acc, float)))
         while t - self._win[0][0] > w:
             self._win.popleft()
 
-    def _stationary(self):
+    def _stationary(self, t):
+        """Quasi-static IMU over the window AND no evidence of motion.
+
+        The accel norm barely changes when a vehicle accelerates horizontally, so the accel *vector* must also be
+        steady, and a fresh GNSS fix reporting movement vetoes it. Without these, ZUPT clamps speed to zero while the
+        vehicle is pulling away from a stop and the accel-bias states absorb the real acceleration.
+        """
         qs = self.cfg["align"]["quasi_static"]
+        k = self.cfg["ekf"]
         if not self._win or self._win[-1][0] - self._win[0][0] < 0.99 * qs["window_s"]:
             return False
-        return all(g < qs["gyro_norm_max_radps"] and a < qs["accel_norm_dev_max_mps2"]
-                   for _, g, a, _ in self._win)
+        if not all(g < qs["gyro_norm_max_radps"] and a < qs["accel_norm_dev_max_mps2"] for _, g, a, _, _ in self._win):
+            return False
+        if t - self._last_fix_t < k["zupt_gnss_veto_age_s"] and self._last_fix_speed > k["zupt_gnss_veto_speed_mps"]:
+            return False
+        acc = np.array([w[4] for w in self._win])
+        return float(np.max(np.linalg.norm(acc - acc.mean(axis=0), axis=1))) < qs["accel_vec_dev_max_mps2"]
 
     def _mode(self, t):
         timeout = self.cfg["integrity"]["no_fix_timeout_s"] + MODE_SLACK_S

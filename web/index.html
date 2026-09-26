@@ -59,7 +59,8 @@ small{color:var(--mut)}
 <body>
 <header>
   <h1>DHRUVA</h1>
-  <div class="tag">Navigation that does not stop where the sky does</div>
+  <div><div style="font-weight:700;letter-spacing:.14em;font-size:13px">RESILIENT NAVIGATION</div>
+  <div class="tag">Navigation that does not stop where the sky does</div></div>
   <nav role="tablist">
     <button role="tab" data-tab="hud" aria-selected="true">Navigation HUD</button>
     <button role="tab" data-tab="replay" aria-selected="false">Replay / GNSS Outage</button>
@@ -86,9 +87,10 @@ small{color:var(--mut)}
   <div class="grid two">
     <div><canvas id="map1"></canvas><div class="lg" id="lg1"></div></div>
     <div class="panel">
+      <button class="btn" id="btnStart" style="background:#1d4ed8;border-color:#93c5fd;margin-bottom:8px">[ START DEMO ]</button>
       <button class="btn" id="btnOutage">[ SIMULATE GNSS OUTAGE ]</button>
       <div class="row"><button class="btn2" id="btnSpoof">Simulated spoof scenario</button></div>
-      <small id="hint">Replays the simulated 60 s GNSS outage through the engine. The spoof scenario is one simulated attack type (a 500 m step); it does not claim to detect all spoofing.</small>
+      <small id="hint">START DEMO plays the whole simulated drive from the start. SIMULATE GNSS OUTAGE jumps to just before the 60 s outage. The spoof scenario is one simulated attack type (a 500 m step); it does not claim to detect all spoofing.</small>
       <div class="row"><small id="clock1">-</small></div>
     </div>
   </div>
@@ -328,6 +330,7 @@ else {
   $$("nav button").forEach(b => b.addEventListener("click", () => tab(b.dataset.tab)));
   $$("[data-sid]").forEach(b => b.addEventListener("click", () => setScenario(b.dataset.sid)));
   $$("[data-spd]").forEach(b => b.addEventListener("click", () => { st.speed = +b.dataset.spd; $$("[data-spd]").forEach(x => x.setAttribute("aria-pressed", x === b)); render(); }));
+  $("#btnStart").addEventListener("click", () => { setScenario("outage"); st.tp = 0; st.speed = 6; st.playing = true; render(); });
   $("#btnOutage").addEventListener("click", () => { setScenario("outage"); st.speed = 4; st.playing = true; render(); });
   $("#btnSpoof").addEventListener("click", () => { setScenario("spoof_step"); st.speed = 4; st.playing = true; render(); });
   $("#btnPlay").addEventListener("click", () => { if (st.tp >= S.duration_s) st.tp = 0; st.playing = !st.playing; render(); });

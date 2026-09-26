@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "NavState",
+  "description": "One DHRUVA navigation-state record. null means NOT MEASURED. Hand-written from what the engine outputs (docs/CONTRACT.md); the Stitch nav_state.ts is not on disk (docs/BLOCKERS.md B1).",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["timestamp", "latitude", "longitude", "speedMps", "headingDeg", "positionCov95M", "mode", "gnssTrust",
+               "gnssStatus", "routeStatus", "dataSource", "dataType"],
+  "properties": {
+    "timestamp": {"type": "number", "description": "Sensor time, seconds, monotonic."},
+    "latitude": {"type": "number", "minimum": -90, "maximum": 90},
+    "longitude": {"type": "number", "minimum": -180, "maximum": 180},
+    "speedMps": {"type": ["number", "null"], "minimum": 0, "description": "Estimated ground speed, m/s."},
+    "headingDeg": {"type": ["number", "null"], "minimum": 0, "exclusiveMaximum": 360, "description": "Clockwise from north."},
+    "positionCov95M": {"type": ["number", "null"], "minimum": 0, "description": "Radius in metres of the filter's own 95 % horizontal confidence circle."},
+    "mode": {"enum": ["GNSS", "DR", "DEGRADED"]},
+    "gnssTrust": {"type": ["number", "null"], "minimum": 0, "maximum": 1, "description": "Integrity monitor score; 0 while GNSS is not being used."},
+    "gnssStatus": {"enum": ["OK", "DEGRADED", "UNAVAILABLE", "VALIDATING", "REJECTED"]},
+    "routeStatus": {"enum": ["NOT_AVAILABLE", "ON_ROUTE", "DEVIATION_DETECTED"], "description": "NOT_AVAILABLE until the router is wired into the engine."},
+    "dataSource": {"enum": ["LIVE", "REPLAY", "MOCK"]},
+    "dataType": {"enum": ["REAL", "SIMULATED"], "description": "SIMULATED for every synthetic drive; REAL only for a genuine recorded drive."}
+  }
+}

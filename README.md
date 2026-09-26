@@ -37,7 +37,7 @@ Three screens: **Navigation HUD** (mode, GNSS trust, speed, position confidence,
 
 ## Demo Scenario
 
-Press **[ SIMULATE GNSS OUTAGE ]**. The replay runs GNSS MODE (trust high) → DEAD RECKONING (trust low, simulated) → GNSS RECOVERY (validating GNSS) → GNSS MODE, with the uncertainty ring growing during the outage and the position recovering afterwards. Two simulated spoof scenarios (500 m step, 2 m/s drift) show the integrity monitor rejecting fixes. They cover those two attack types only and do not claim to detect all spoofing.
+Press **[ START DEMO ]** to play the whole simulated drive, or **[ SIMULATE GNSS OUTAGE ]** to jump to just before the outage. The replay runs GNSS MODE (trust high) → DEAD RECKONING (trust low, simulated) → GNSS RECOVERY (validating GNSS) → GNSS MODE, with the uncertainty ring growing during the outage and the position recovering afterwards. Two simulated spoof scenarios (500 m step, 2 m/s drift) show the integrity monitor rejecting fixes. They cover those two attack types only and do not claim to detect all spoofing.
 
 The demo drive is the first drive of the held-out `test` split (seed 4000), not chosen by result. On it, over a 60 s (1,007 m) outage, the engine ended 4.2 m off (0.42 % drift) against 81 m (8.05 %) for the gyro-heading baseline. This is one simulated drive, n = 1.
 

@@ -1,8 +1,8 @@
 import numpy as np
 import pytest
 
-from engine_py.geo import to_latlon
-from engine_py.metrics import evaluate
+from dhruva.geo import to_latlon
+from dhruva.legacy.metrics import evaluate
 
 LAT0, LON0 = 28.6, 77.2
 

@@ -1,0 +1,51 @@
+{
+  "_note": "Single source of engine parameters (Python and Kotlin both read this). Values below are from the master spec; add tunables as modules land and tune on the train split only.",
+  "gravity_mps2": 9.80665,
+  "align": {
+    "quasi_static": { "gyro_norm_max_radps": 0.05, "accel_norm_dev_max_mps2": 0.3, "window_s": 1.0 },
+    "straight": { "gyro_z_max_radps": 0.03, "speed_min_mps": 5.0 },
+    "realign_gravity_change_deg": 10.0,
+    "realign_within_s": 1.0
+  },
+  "ekf": {
+    "gnss_pos_sigma_floor_m": 3.0,
+    "gnss_vel_speed_min_mps": 1.0,
+    "nhc_sigma_mps": 0.2,
+    "speednet_var_floor": 0.05,
+    "map_snap_sigma_cross_m": 3.0,
+    "map_snap_sigma_along_m": 30.0
+  },
+  "speednet": {
+    "window_s": 1.5,
+    "rate_hz": 10,
+    "logvar_clip": [-6.0, 4.0]
+  },
+  "integrity": {
+    "chi2_99_2dof": 9.21,
+    "chi2_95_2dof": 5.991,
+    "no_fix_timeout_s": 1.0,
+    "min_sats": 4,
+    "max_acc_h_m": 30.0,
+    "spoof_consecutive_fixes": 2,
+    "spoof_cov95_max_m": 15.0,
+    "reacquire_consecutive_fixes": 3,
+    "reacquire_speed_tol_mps": 2.0,
+    "reacquire_course_tol_deg": 15.0,
+    "reacquire_pos_sigma_mult": 3.0,
+    "reacquire_pos_slack_m": 5.0,
+    "display_blend_s": 2.0
+  },
+  "mapmatch": {
+    "candidate_radius_min_m": 50.0,
+    "candidate_radius_sigma_mult": 3.0,
+    "emission_sigma_min_m": 5.0,
+    "transition_beta_m": 8.0,
+    "heading_sigma_deg": 20.0,
+    "lag_s": 5.0
+  },
+  "route": {
+    "deviation_cross_track_m": 30.0,
+    "deviation_duration_s": 3.0
+  },
+  "ps_benchmark": { "drift_pct_max": 10.0, "err_per_km_m_max": 100.0 }
+}

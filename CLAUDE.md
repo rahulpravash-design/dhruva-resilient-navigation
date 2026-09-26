@@ -8,24 +8,31 @@ A fusion lead · B ML · C Android · D data/map · E eval/dashboard · F pitch/
 
 ## Repo layout
 ```
-engine_py/     Python prototype (EKF, baseline, evaluation, injectors)
-android/       Kotlin/Compose app, Kotlin port of the engine
-dashboard/     React + Vite + TypeScript + Tailwind + Zustand + Zod + uPlot + MapLibre + PMTiles
-data/          GSDC, IO-VNBD, own GnssLogger drives (split by trajectory, never by row)
-docs/          CONTRACT.md (frozen at Hour 2), metrics, evidence
-design/stitch/ Stitch screens + _claude_code_handoff/ (prompt, content audit, tokens, contracts)
-runs/<name>/   timeline.jsonl + metrics.json per evaluation run
+configs/       engine.json (single source of engine params; Python + Kotlin read it), eval.yaml
+contracts/     nav_state.ts (from the Stitch handoff) -> nav_state.schema.json (generated)
+engine_py/dhruva/  geo, io, sim, align, ekf, speednet, integrity, mapmatch, route, metrics, eval, export, legacy
+engine_py/tests/   unit tests; golden/ = golden outputs
+engine_kt/     pure Kotlin/JVM engine (P7)      android/  Compose app (P9)      web/  dashboard (P8)
+data/raw/ (gitignored)  data/fixtures/ (<=3000-row clips)  data/splits.yaml
+models/  maps/  runs/<id>/ (timeline.jsonl + metrics.json)  scripts/  docs/
+design/stitch/ + _claude_code_handoff/  (NOT on disk yet — see docs/BLOCKERS.md)
 ```
-Create folders only when the current phase needs them.
+Create folders only when the current phase needs them. `engine_py/dhruva/legacy/` holds the flat prototype (heading CW from north); it is superseded by the phases below — replace it, don't extend it.
 
-## Engine contract (frozen at Hour 2 — change only with team sign-off)
-INPUT per row:
-`t, ax, ay, az, gx, gy, gz, mx, my, mz, gnss_lat, gnss_lon, gnss_acc, gnss_speed, gnss_bearing, cn0_mean, n_sats, gnss_valid`
+## Conventions (prevent frame/sign bugs)
+- Nav frame: local ENU at the first fix (x East, y North); lat/lon<->ENU only via `dhruva/geo.py`.
+- Vehicle body: x forward, y left, z up. Phone frame: Android sensor axes.
+- Internal yaw psi: radians, counter-clockwise from East, wrapped to (-pi, pi]. UI heading = (90 deg - psi) mod 360.
+- SI units; float64/Double. Time from sensor timestamps (monotonic), never wall clock.
+- Engine I/O: fixture/replay CSV (spec section 6) in, `NavState` per 10 Hz tick out. `docs/CONTRACT.md` is the legacy prototype contract.
 
-OUTPUT per row:
-`t, lat, lon, cov_ee, cov_en, cov_nn, speed, heading, mode {GNSS|DR|DEGRADED}, gnss_trust (0–1)`
-
-Python and Kotlin engines implement this same contract. `NavState` (`contracts/nav_state.ts`) is the single engine→UI contract.
+## Session protocol
+- Start: read this file, `docs/PROGRESS.md`, `docs/BLOCKERS.md`; continue from the first unchecked task.
+- After every change: `make test-fast`. Before every commit: `make test-golden`.
+- Commit per task as `<area>: <what>` (areas: engine, eval, ml, kt, android, web, docs, ci).
+- After 2 failed attempts on the same problem: write it up in `docs/BLOCKERS.md` and move on.
+- Ask before adding a dependency the master prompt doesn't name.
+- Tools on this machine: `.venv` (Python 3.12), GNU make and Gradle 8.10.2 (add both to PATH in each shell; see docs/PROGRESS.md).
 
 ## Engine design
 - Error-state EKF: position E/N, velocity, heading, gyro bias.

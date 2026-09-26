@@ -1,0 +1,12 @@
+[tool.pytest.ini_options]
+pythonpath = ["engine_py"]
+testpaths = ["engine_py/tests"]
+addopts = "--import-mode=importlib"
+markers = [
+    "slow: takes more than ~2 s; excluded from make test-fast",
+    "golden: golden-output / parity test; run by make test-golden",
+]
+
+[tool.ruff]
+line-length = 110
+src = ["engine_py"]

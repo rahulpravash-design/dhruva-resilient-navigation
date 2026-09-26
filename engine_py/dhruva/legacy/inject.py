@@ -1,7 +1,7 @@
 """Fault injectors. Each returns a modified copy; the input trace is never mutated."""
 import numpy as np
 
-from .geo import offset_latlon
+from ..geo import offset_latlon
 
 _GNSS_COLS = ("gnss_lat", "gnss_lon", "gnss_acc", "gnss_speed", "gnss_bearing", "cn0_mean", "n_sats")
 

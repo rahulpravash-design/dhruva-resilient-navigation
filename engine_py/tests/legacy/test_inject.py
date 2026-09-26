@@ -1,10 +1,10 @@
 import numpy as np
 import pytest
 
-from engine_py.contract import validate_input
-from engine_py.geo import to_enu
-from engine_py.inject import outage, spoof_drift, spoof_offset
-from engine_py.synth import make_drive
+from dhruva.geo import to_enu
+from dhruva.legacy.contract import validate_input
+from dhruva.legacy.inject import outage, spoof_drift, spoof_offset
+from dhruva.legacy.synth import make_drive
 
 
 @pytest.fixture

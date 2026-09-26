@@ -5,7 +5,7 @@ heading rate = -gz.
 """
 import numpy as np
 
-from .geo import to_latlon
+from ..geo import to_latlon
 
 G = 9.81
 T0 = 1.7e9  # arbitrary epoch start
@@ -48,7 +48,7 @@ def make_drive(duration=400.0, imu_hz=10, gnss_hz=1, seed=0, origin=(28.6139, 77
     }
 
     fix = np.zeros(n, bool)
-    fix[:: max(1, int(round(imu_hz / gnss_hz)))] = True
+    fix[:: max(1, round(imu_hz / gnss_hz))] = True
     nan = np.full(n, np.nan)
     ge = e + rng.normal(0, 3.0, n)
     gn = nn + rng.normal(0, 3.0, n)

@@ -1,7 +1,7 @@
 """Evaluation metrics. Definitions: docs/CONTRACT.md."""
 import numpy as np
 
-from .geo import to_enu
+from ..geo import to_enu
 
 CHI2_95_2DOF = 5.991
 

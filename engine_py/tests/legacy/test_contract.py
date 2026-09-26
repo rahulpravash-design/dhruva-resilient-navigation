@@ -1,9 +1,9 @@
 import numpy as np
 import pytest
 
-from engine_py.baseline import run
-from engine_py.contract import ContractError, validate_input, validate_output
-from engine_py.synth import make_drive
+from dhruva.legacy.baseline import run
+from dhruva.legacy.contract import ContractError, validate_input, validate_output
+from dhruva.legacy.synth import make_drive
 
 
 @pytest.fixture

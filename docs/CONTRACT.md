@@ -1,3 +1,5 @@
+> Legacy prototype contract (heading CW from north). Superseded by the fixture format and NavState in the master spec; see CLAUDE.md conventions.
+
 # DHRUVA engine contract v1 (frozen at Hour 2)
 
 Changing anything here needs team sign-off. Python (`engine_py/contract.py`) and the Kotlin port must both follow this file.

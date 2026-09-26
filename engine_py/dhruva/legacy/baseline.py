@@ -6,8 +6,8 @@ aligned with the vehicle (x forward, z up); alignment is Phase 2 work.
 """
 import numpy as np
 
+from ..geo import to_enu, to_latlon
 from .contract import validate_input, validate_output
-from .geo import to_enu, to_latlon
 
 FIX_TIMEOUT_S = 2.0   # rows within this of the last fix count as mode GNSS
 SIGMA_GROWTH = 0.5    # m of 1-sigma per second without a fix (heuristic, not calibrated)

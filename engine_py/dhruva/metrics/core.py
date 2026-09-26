@@ -24,6 +24,8 @@ def outage_metrics(t, est_lat, est_lon, cov95_m, truth_lat, truth_lon, t0, t1):
     te, tn = to_enu(tlat, tlon, tlat[0], tlon[0])
     dist = float(np.sum(np.hypot(np.diff(te), np.diff(tn))))
     endpoint = float(err[-1])
+    cov = np.asarray(cov95_m, float)[w]
+    coverage = float(np.mean(err <= cov) * 100) if np.all(np.isfinite(cov)) else float("nan")
     has_dist = dist > 0
     drift = endpoint / dist * 100 if has_dist else float("nan")
     per_km = endpoint * 1000 / dist if has_dist else float("nan")
@@ -33,7 +35,7 @@ def outage_metrics(t, est_lat, est_lon, cov95_m, truth_lat, truth_lon, t0, t1):
         "distance_m": dist,
         "drift_pct": drift,
         "err_per_km_m": per_km,
-        "coverage_pct": float(np.mean(err <= np.asarray(cov95_m)[w]) * 100),
+        "coverage_pct": coverage,
         "ps_pass": bool(has_dist and drift <= PS_DRIFT_PCT_MAX and per_km <= PS_ERR_PER_KM_MAX_M),
     }
 

@@ -39,7 +39,9 @@ test-ui:
 	@echo "[skip] test-ui needs web/ (P8) and android/ (P9)"
 
 test-full:
-	@echo "[skip] test-full needs the eval harness (P6)"
+	$(PY) -m pytest -m slow -q
+	@echo "[skip] full dataset eval needs the eval harness (P6)"
 
 golden-update:
-	@echo "[skip] no golden outputs yet (P2). Commit message must state the reason for any regeneration."
+	$(PY) scripts/golden_update.py
+	@echo "Golden outputs regenerated. The commit message must state the reason."

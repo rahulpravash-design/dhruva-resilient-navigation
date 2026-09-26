@@ -2,8 +2,15 @@
   "_note": "Single source of engine parameters (Python and Kotlin both read this). Values below are from the master spec; add tunables as modules land and tune on the train split only.",
   "gravity_mps2": 9.80665,
   "align": {
-    "quasi_static": { "gyro_norm_max_radps": 0.05, "accel_norm_dev_max_mps2": 0.3, "window_s": 1.0 },
-    "straight": { "gyro_z_max_radps": 0.03, "speed_min_mps": 5.0 },
+    "quasi_static": {
+      "gyro_norm_max_radps": 0.05,
+      "accel_norm_dev_max_mps2": 0.3,
+      "window_s": 1.0
+    },
+    "straight": {
+      "gyro_z_max_radps": 0.03,
+      "speed_min_mps": 5.0
+    },
     "realign_gravity_change_deg": 10.0,
     "realign_within_s": 1.0
   },
@@ -13,12 +20,34 @@
     "nhc_sigma_mps": 0.2,
     "speednet_var_floor": 0.05,
     "map_snap_sigma_cross_m": 3.0,
-    "map_snap_sigma_along_m": 30.0
+    "map_snap_sigma_along_m": 30.0,
+    "_tuning_note": "Noise values below are initial, matched to the simulator's IMU model. Re-tune on the train split only when real data exists.",
+    "accel_noise_mps2_rthz": 0.01,
+    "gyro_noise_radps_rthz": 0.0006,
+    "gyro_bias_rw_radps_rts": 2e-05,
+    "accel_bias_rw_mps2_rts": 0.0005,
+    "gnss_vel_along_sigma_mps": 0.15,
+    "gnss_bearing_sigma_deg": 3.0,
+    "zupt_sigma_mps": 0.05,
+    "zaru_sigma_radps": 0.002,
+    "tick_hz": 10,
+    "init": {
+      "pos_sigma_m": 5.0,
+      "vel_sigma_mps": 0.5,
+      "psi_sigma_rad": 0.1,
+      "no_bearing_psi_sigma_rad": 3.14,
+      "gyro_bias_sigma_radps": 0.01,
+      "accel_bias_sigma_mps2": 0.1
+    },
+    "zupt_speed_max_mps": 1.0
   },
   "speednet": {
     "window_s": 1.5,
     "rate_hz": 10,
-    "logvar_clip": [-6.0, 4.0]
+    "logvar_clip": [
+      -6.0,
+      4.0
+    ]
   },
   "integrity": {
     "chi2_99_2dof": 9.21,
@@ -47,5 +76,8 @@
     "deviation_cross_track_m": 30.0,
     "deviation_duration_s": 3.0
   },
-  "ps_benchmark": { "drift_pct_max": 10.0, "err_per_km_m_max": 100.0 }
+  "ps_benchmark": {
+    "drift_pct_max": 10.0,
+    "err_per_km_m_max": 100.0
+  }
 }

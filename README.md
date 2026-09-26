@@ -17,16 +17,20 @@ Phone navigation fails in tunnels, under flyovers, in urban canyons, and when GN
 
 ## Demo
 
-Everything runs offline. From the repo root on Windows:
+Everything runs offline. The demo needs only Python 3 (standard library). From the repo root:
 
 ```
-.venv\Scripts\python -m http.server 8765 --directory web
+python -m http.server 8765 --directory web
 ```
 
-Then open <http://localhost:8765/index.html>. Opening `web\index.html` directly also works. The demo data is committed in `web/data/demo.js`. To regenerate it from the real engine (about 1 minute):
+Then open <http://localhost:8765/index.html>. Opening `web/index.html` directly also works. The demo data is committed in `web/data/demo.js`.
+
+To regenerate that data from the real engine (about 1 minute), create a virtualenv (Python 3.12 was used), install the requirements, and run the script. On Windows, use `.venv\Scripts\python` in place of `python` after activating it:
 
 ```
-.venv\Scripts\python scripts\make_demo.py
+python -m venv .venv
+pip install -r requirements.txt -r requirements-ml.txt
+python scripts/make_demo.py
 ```
 
 Three screens: **Navigation HUD** (mode, GNSS trust, speed, position confidence, trajectory), **Replay / GNSS Outage** (scenario picker, scrubber, error against simulated truth) and **Technical Metrics** (numbers for the run shown, plus everything that is NOT MEASURED). The map is a local trajectory view with no basemap and no network access.
@@ -54,9 +58,11 @@ Simulated results are not field measurements. They show how the engine behaves i
 ## Tests
 
 ```
-.venv\Scripts\python -m ruff check engine_py scripts
-.venv\Scripts\python -m pytest engine_py/tests -m "not slow" -n auto -q
+python -m ruff check engine_py scripts
+python -m pytest engine_py/tests -m "not slow" -n auto -q
 ```
+
+Run these inside the virtualenv above. The last full run gave 142 passed.
 
 ## Team
 
